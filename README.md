@@ -24,7 +24,7 @@ To run Benji on your local machine, follow these steps:
 
 1. **Clone the repository:**
    ```
-   git clone https://github.com/yourusername/Benji.git
+   git clone https://github.com/yesenvidnath/Benji.git
    ```
 2. **Navigate to the project directory:**
    ```
@@ -55,9 +55,9 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## Contact
 
-Your Name - [your-email@example.com](mailto:your-email@example.com)
+Your Name - [ykandalama@gmail.com](mailto:ykandalama@gmail.com)
 
-Project Link: [https://github.com/yourusername/Benji](https://github.com/yourusername/Benji)
+Project Link: [https://github.com/yesenvidnath/Benji](https://github.com/yesenvidnath/Benji/)
 
 ## Acknowledgments
 
