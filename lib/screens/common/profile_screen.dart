@@ -1,18 +1,18 @@
-// screens/common/profile_screen.dart
-
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
+import '../../../widgets/common/header_navigator.dart';
 import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/analytics_graph.dart';
 import '../../../widgets/common/expense_list.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  ProfileScreen({Key? key}) : super(key: key);
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
-    // Sample expense data
     final expenses = [
       ExpenseItem(title: 'Grocery', percentage: '20%', isIncrease: true),
       ExpenseItem(title: 'Internet', percentage: '5%', isIncrease: true),
@@ -22,24 +22,23 @@ class ProfileScreen extends StatelessWidget {
     ];
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppColors.background,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60.0),
+        child: HeaderNavigator(
+          currentRoute: 'profile',
+          scaffoldKey: _scaffoldKey,
+        ),
+      ),
+      drawer: HeaderNavigator.buildDrawer(context),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Section
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text(
-                  'Your Profile',
-                  style: AppTextStyles.h1,
-                ),
-              ),
-
-              // Profile Card
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 20.0),
+                margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
                   color: AppColors.surface,
@@ -54,7 +53,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    // Profile Image
                     CircleAvatar(
                       radius: 30,
                       backgroundColor: AppColors.primaryLight,
@@ -65,7 +63,6 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    // Profile Info
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,10 +99,6 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Quick Stats
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Row(
@@ -130,16 +123,9 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Analytics Graph Section
               const AnalyticsGraph(),
-
-              // Expenses List Section
               ExpensesList(expenses: expenses),
-
-              // Investments Section
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -186,10 +172,7 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-              
-              // Footer Navigation
               const FooterNavigator(currentRoute: 'profile'),
             ],
           ),

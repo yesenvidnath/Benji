@@ -1,7 +1,9 @@
+// footer_navigator.dart
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
-import '../../../screens/common/add_expenses_screen.dart';
+import '../../../screens/common/expenses_screen.dart';
+import '../../../screens/common/notifications_screen.dart'; // Add this import
 
 class FooterNavigator extends StatelessWidget {
   final String currentRoute;
@@ -23,6 +25,14 @@ class FooterNavigator extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (context) => const AddExpensesScreen(),
+            ),
+          );
+          break;
+        case 'notifications':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const NotificationScreen(),
             ),
           );
           break;
@@ -84,9 +94,9 @@ class FooterNavigator extends StatelessWidget {
             children: [
               _buildNavItem(context, Icons.home, 'Home', 'home'),
               _buildNavItem(context, Icons.history, 'History', 'history'),
+              _buildNavItem(context, Icons.notifications, 'Notifications', 'notifications'),
               _buildNavItem(context, Icons.account_balance_wallet, 'Expenses', 'expenses'),
               _buildNavItem(context, Icons.show_chart, 'Statistic', 'statistic'),
-              _buildNavItem(context, Icons.person, 'Profile', 'profile'),
             ],
           ),
         ),

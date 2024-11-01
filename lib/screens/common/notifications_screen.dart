@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
+import '../../../widgets/common/footer_navigator.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -66,6 +67,7 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
           ),
         ],
       ),
+      bottomNavigationBar: const FooterNavigator(currentRoute: 'notifications'),
     );
   }
 
