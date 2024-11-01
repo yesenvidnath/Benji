@@ -1,31 +1,37 @@
-// lib/screens/user/payments_screen.dart
+// lib/screens/user/payment_status_screen.dart
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
-import '../../../data/models/professional.dart';
 import '../../../widgets/common/footer_navigator.dart';
-import './payment_status_screen.dart';
 
-class PaymentScreen extends StatelessWidget {
-  final Professional professional;
-  final String bookingDateTime;
-  final String description;
+enum PaymentStatus {
+  success,
+  failure
+}
+
+class PaymentStatusScreen extends StatelessWidget {
+  final PaymentStatus status;
+  final String professionalName;
+  final String professionalRole;
+  final double amount;
+  final double adminFee;
   
-  const PaymentScreen({
+  const PaymentStatusScreen({
     Key? key,
-    required this.professional,
-    required this.bookingDateTime,
-    required this.description,
+    this.status = PaymentStatus.success,
+    required this.professionalName,
+    required this.professionalRole,
+    required this.amount,
+    required this.adminFee,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final double amount = 1500.00;
-    final double adminFee = 150.50;
     final double total = amount + adminFee;
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -46,7 +52,7 @@ class PaymentScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const SizedBox(height: 24),
-                  // Payment Title Circle
+                  // Status Circle
                   Container(
                     width: 80,
                     height: 80,
@@ -72,33 +78,27 @@ class PaymentScreen extends StatelessWidget {
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
                     child: Column(
                       children: [
                         CircleAvatar(
                           radius: 30,
                           backgroundColor: AppColors.primaryLight,
-                          child: const Icon(Icons.person, color: AppColors.textPrimary),
+                          child: Text(
+                            professionalName[0],
+                            style: AppTextStyles.h2,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          professional.name,
+                          professionalName,
                           style: AppTextStyles.bodyLarge,
                         ),
                         Text(
-                          professional.role,
-                          style: AppTextStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                          professionalRole,
+                          style: AppTextStyles.bodyMedium,
                         ),
                       ],
                     ),
@@ -120,6 +120,44 @@ class PaymentScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+
+                  // Status Message
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Column(
+                      children: [
+                        Icon(
+                          status == PaymentStatus.success 
+                              ? Icons.check_circle 
+                              : Icons.error,
+                          size: 64,
+                          color: status == PaymentStatus.success 
+                              ? AppColors.success 
+                              : AppColors.error,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          status == PaymentStatus.success 
+                              ? 'Payment Successful!' 
+                              : 'Payment Failed',
+                          style: AppTextStyles.h2.copyWith(
+                            color: status == PaymentStatus.success 
+                                ? AppColors.success 
+                                : AppColors.error,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          status == PaymentStatus.success 
+                              ? 'Your payment has been processed successfully'
+                              : 'There was an error processing your payment',
+                          style: AppTextStyles.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                   
                   // Barcode
                   Container(
@@ -138,26 +176,15 @@ class PaymentScreen extends StatelessWidget {
             ),
           ),
           
-          // Pay Now Button
+          // Action Button
           Padding(
             padding: const EdgeInsets.all(24),
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                    // Handle payment processing
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PaymentStatusScreen(
-                          status: PaymentStatus.success, // or PaymentStatus.failure based on payment result
-                          professionalName: professional.name,
-                          professionalRole: professional.role,
-                          amount: amount,
-                          adminFee: adminFee,
-                        ),
-                      ),
-                    );
+                  // Navigate back to home or show receipt
+                  Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0A0F44),
@@ -166,12 +193,10 @@ class PaymentScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Pay Now',
-                  style: TextStyle(
+                child: Text(
+                  status == PaymentStatus.success ? 'Back to Home' : 'Try Again',
+                  style: AppTextStyles.button.copyWith(
                     color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -190,9 +215,7 @@ class PaymentScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppTextStyles.bodyMedium,
         ),
         Text(
           amount,
@@ -204,4 +227,3 @@ class PaymentScreen extends StatelessWidget {
     );
   }
 }
-

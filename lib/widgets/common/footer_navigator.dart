@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../screens/common/expenses_screen.dart';
+import '../../../screens/common/analytics_screen.dart';
 import '../../../screens/common/notifications_screen.dart'; // Add this import
 
 class FooterNavigator extends StatelessWidget {
@@ -41,6 +42,12 @@ class FooterNavigator extends StatelessWidget {
           break;
         case 'statistic':
           // Navigator.pushNamed(context, '/statistic');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AnalyticsScreen(),
+            ),
+          );
           break;
         case 'profile':
           // Navigator.pushNamed(context, '/profile');

@@ -4,6 +4,9 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../screens/common/expenses_screen.dart';
 import '../../../screens/common/notifications_screen.dart';
+import '../../../screens/common/analytics_screen.dart';
+import '../../../screens/user/professional_list_screen.dart';
+import '../../../screens/user/user_meetings_screen.dart';
 
 class HeaderNavigator extends StatelessWidget {
   final String currentRoute;
@@ -44,9 +47,33 @@ class HeaderNavigator extends StatelessWidget {
           ),
         );
         break;
+      case 'meetings':
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const UserMeetingsScreen(),
+          ),
+        );
+        break;
       case 'dashboard':
       case 'history':
       case 'statistics':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AnalyticsScreen(),
+          ),
+        );
+
+      case 'Profeshanals':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfessionalListScreen(),
+          ),
+        );
+
       case 'settings':
       case 'help':
         // For screens that aren't implemented yet, show a snackbar
@@ -154,6 +181,11 @@ class HeaderNavigator extends StatelessWidget {
             onTap: () => _handleNavigation(context, 'notifications'),
           ),
           _buildDrawerItem(
+            icon: Icons.calendar_view_day_rounded,
+            title: 'meetings',
+            onTap: () => _handleNavigation(context, 'meetings'),
+          ),
+          _buildDrawerItem(
             icon: Icons.history,
             title: 'History',
             onTap: () => _handleNavigation(context, 'history'),
@@ -164,6 +196,11 @@ class HeaderNavigator extends StatelessWidget {
             onTap: () => _handleNavigation(context, 'statistics'),
           ),
           const Divider(),
+          _buildDrawerItem(
+            icon: Icons.settings,
+            title: 'Profeshanals',
+            onTap: () => _handleNavigation(context, 'Profeshanals'),
+          ),
           _buildDrawerItem(
             icon: Icons.settings,
             title: 'Settings',
