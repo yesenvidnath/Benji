@@ -101,7 +101,7 @@ class AnalyticsGraph extends StatelessWidget {
                     FlSpot(6, 50),  // Sunday
                   ],
                   isCurved: true,
-                  color: AppColors.primary,
+                  color: AppColors.textPrimary,
                   barWidth: 3,
                   isStrokeCapRound: true,
                   dotData: FlDotData(
@@ -109,7 +109,7 @@ class AnalyticsGraph extends StatelessWidget {
                     getDotPainter: (spot, percent, barData, index) {
                       return FlDotCirclePainter(
                         radius: 4,
-                        color: AppColors.primary,
+                        color: AppColors.textPrimary,
                         strokeWidth: 2,
                         strokeColor: Colors.white,
                       );
@@ -117,7 +117,7 @@ class AnalyticsGraph extends StatelessWidget {
                   ),
                   belowBarData: BarAreaData(
                     show: true,
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.textPrimary.withOpacity(0.1),
                   ),
                 ),
               ],
