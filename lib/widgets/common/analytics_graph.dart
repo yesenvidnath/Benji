@@ -6,15 +6,15 @@ import '../../../core/theme/text_styles.dart';
 import '../../../core/theme/colors.dart';
 
 class AnalyticsGraph extends StatelessWidget {
-  const AnalyticsGraph({Key? key}) : super(key: key);
+  const AnalyticsGraph({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20.0, top: 20.0, right: 20.0),
+        const Padding(
+          padding: EdgeInsets.only(left: 20.0, top: 20.0, right: 20.0),
           child: Text(
             'Weekly Spending Analysis',
             style: AppTextStyles.h2,
@@ -74,8 +74,8 @@ class AnalyticsGraph extends StatelessWidget {
                     },
                   ),
                 ),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               borderData: FlBorderData(
                 show: true,
@@ -150,13 +150,13 @@ class AnalyticsGraph extends StatelessWidget {
               Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'Daily Spending',
                 style: AppTextStyles.bodyMedium,
               ),

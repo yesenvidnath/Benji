@@ -19,7 +19,7 @@ class Meeting {
 }
 
 class UserMeetingsScreen extends StatefulWidget {
-  const UserMeetingsScreen({Key? key}) : super(key: key);
+  const UserMeetingsScreen({super.key});
 
   @override
   State<UserMeetingsScreen> createState() => _UserMeetingsScreenState();
@@ -129,7 +129,7 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
                         style: AppTextStyles.bodyLarge,
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      const Text(
                         'Tuesday, 23 Nov 2021',
                         style: AppTextStyles.bodyMedium,
                       ),

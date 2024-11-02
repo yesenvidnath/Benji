@@ -199,7 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ],
               ),
-            )).toList(),
+            )),
         OutlinedButton(
           onPressed: () {
             setState(() {

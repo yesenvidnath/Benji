@@ -18,13 +18,13 @@ class PaymentStatusScreen extends StatelessWidget {
   final double adminFee;
   
   const PaymentStatusScreen({
-    Key? key,
+    super.key,
     this.status = PaymentStatus.success,
     required this.professionalName,
     required this.professionalRole,
     required this.amount,
     required this.adminFee,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

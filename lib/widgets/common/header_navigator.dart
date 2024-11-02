@@ -17,14 +17,14 @@ class HeaderNavigator extends StatelessWidget {
   final VoidCallback onProfilePressed;
 
   const HeaderNavigator({
-    Key? key,
+    super.key,
     required this.currentRoute,
     required this.userName,
     this.userAvatar,
     required this.onMenuPressed,
     required this.onSearchPressed,
     required this.onProfilePressed,
-  }) : super(key: key);
+  });
 
   static void _handleNavigation(BuildContext context, String route) {
     Navigator.pop(context); // Close drawer first
@@ -138,14 +138,14 @@ class HeaderNavigator extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primary,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 30,
                   backgroundColor: AppColors.surface,
                   child: Icon(

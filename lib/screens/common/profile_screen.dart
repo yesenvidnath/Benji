@@ -7,7 +7,7 @@ import '../../../widgets/common/analytics_graph.dart';
 import '../../../widgets/common/expense_list.dart';
 
 class ProfileScreen extends StatelessWidget {
-  ProfileScreen({Key? key}) : super(key: key);
+  ProfileScreen({super.key});
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -70,10 +70,10 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          CircleAvatar(
+                          const CircleAvatar(
                             radius: 30,
                             backgroundColor: AppColors.primaryLight,
-                            child: const Icon(
+                            child: Icon(
                               Icons.person,
                               color: AppColors.accent,
                               size: 30,
@@ -84,7 +84,7 @@ class ProfileScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
+                                const Text(
                                   'Mr. Yesen Kandalama',
                                   style: AppTextStyles.h2,
                                 ),
@@ -151,13 +151,13 @@ class ProfileScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
+                              const Text(
                                 'Investments',
                                 style: AppTextStyles.h2,
                               ),
                               TextButton(
                                 onPressed: () {},
-                                child: Text(
+                                child: const Text(
                                   'See All',
                                   style: AppTextStyles.link,
                                 ),

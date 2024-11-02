@@ -6,7 +6,7 @@ import '../../../widgets/common/expense_list.dart';
 import '../../../widgets/common/footer_navigator.dart';
 
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({Key? key}) : super(key: key);
+  const AnalyticsScreen({super.key});
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -62,7 +62,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Filter',
                     style: AppTextStyles.bodyLarge,
                   ),

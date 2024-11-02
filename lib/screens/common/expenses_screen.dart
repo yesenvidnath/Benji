@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../widgets/common/footer_navigator.dart';  // Add this import
 
 class AddExpensesScreen extends StatefulWidget {
-  const AddExpensesScreen({Key? key}) : super(key: key);
+  const AddExpensesScreen({super.key});
 
   @override
   State<AddExpensesScreen> createState() => _AddExpensesScreenState();

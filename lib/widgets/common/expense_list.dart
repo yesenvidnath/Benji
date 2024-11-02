@@ -8,9 +8,9 @@ class ExpensesList extends StatelessWidget {
   final List<ExpenseItem> expenses;
   
   const ExpensesList({
-    Key? key,
+    super.key,
     required this.expenses,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,7 @@ class ExpensesList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Expenses Listing',
             style: AppTextStyles.h2,
           ),
@@ -40,10 +40,10 @@ class ExpensesList extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Row(
         children: [
-          CircleAvatar(
+          const CircleAvatar(
             radius: 20,
-            backgroundColor: const Color.fromARGB(255, 229, 229, 250),
-            child: const Icon(
+            backgroundColor: Color.fromARGB(255, 229, 229, 250),
+            child: Icon(
               Icons.person,
               color: AppColors.accent,
               size: 20,

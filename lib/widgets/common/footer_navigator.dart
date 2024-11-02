@@ -10,9 +10,9 @@ class FooterNavigator extends StatelessWidget {
   final String currentRoute;
 
   const FooterNavigator({
-    Key? key,
+    super.key,
     required this.currentRoute,
-  }) : super(key: key);
+  });
 
   void _navigateToScreen(BuildContext context, String route) {
     if (currentRoute != route) {

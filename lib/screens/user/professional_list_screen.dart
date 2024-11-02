@@ -6,7 +6,7 @@ import '../../../widgets/common/footer_navigator.dart';
 import './booking_screen.dart';
 
 class ProfessionalListScreen extends StatelessWidget {
-  ProfessionalListScreen({Key? key}) : super(key: key);
+  ProfessionalListScreen({super.key});
 
   final List<Professional> professionals = [
     Professional(
@@ -67,7 +67,7 @@ class ProfessionalListScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                Text(
+                const Text(
                   'Filter',
                   style: AppTextStyles.bodyLarge,
                 ),
@@ -80,14 +80,14 @@ class ProfessionalListScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: AppColors.inputBorder),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'Select Now',
                           style: AppTextStyles.bodyMedium,
                         ),
-                        const Icon(
+                        Icon(
                           Icons.keyboard_arrow_down,
                           color: AppColors.textSecondary,
                         ),
@@ -117,10 +117,10 @@ class ProfessionalListScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(16.0),
                       child: Row(
                         children: [
-                          CircleAvatar(
+                          const CircleAvatar(
                             radius: 24,
                             backgroundColor: AppColors.primaryLight,
-                            child: const Icon(
+                            child: Icon(
                               Icons.person,
                               color: AppColors.textPrimary,
                             ),

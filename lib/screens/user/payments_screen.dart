@@ -13,16 +13,16 @@ class PaymentScreen extends StatelessWidget {
   final String description;
   
   const PaymentScreen({
-    Key? key,
+    super.key,
     required this.professional,
     required this.bookingDateTime,
     required this.description,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    final double amount = 1500.00;
-    final double adminFee = 150.50;
+    const double amount = 1500.00;
+    const double adminFee = 150.50;
     final double total = amount + adminFee;
 
     return Scaffold(
@@ -84,10 +84,10 @@ class PaymentScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        CircleAvatar(
+                        const CircleAvatar(
                           radius: 30,
                           backgroundColor: AppColors.primaryLight,
-                          child: const Icon(Icons.person, color: AppColors.textPrimary),
+                          child: Icon(Icons.person, color: AppColors.textPrimary),
                         ),
                         const SizedBox(height: 12),
                         Text(

@@ -9,9 +9,9 @@ class BookingScreen extends StatefulWidget {
   final Professional professional;
   
   const BookingScreen({
-    Key? key,
+    super.key,
     required this.professional,
-  }) : super(key: key);
+  });
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -31,7 +31,7 @@ class _BookingScreenState extends State<BookingScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
+            colorScheme: const ColorScheme.dark(
               primary: AppColors.accent,
               onPrimary: AppColors.primary,
               surface: AppColors.surface,
@@ -56,7 +56,7 @@ class _BookingScreenState extends State<BookingScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.dark(
+            colorScheme: const ColorScheme.dark(
               primary: AppColors.accent,
               onPrimary: AppColors.primary,
               surface: AppColors.surface,
@@ -259,7 +259,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
+                child: const Text(
                   'Book a Meet Now',
                   style: AppTextStyles.button,
                 ),
