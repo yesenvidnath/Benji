@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../widgets/common/header_navigator.dart';
@@ -15,14 +16,6 @@ class ProfileScreen extends StatelessWidget {
     _scaffoldKey.currentState?.openDrawer();
   }
 
-  void _handleSearchPress() {
-    // Implement search functionality
-  }
-
-  void _handleProfilePress() {
-    // Already on profile screen, could implement additional actions
-  }
-
   @override
   Widget build(BuildContext context) {
     final expenses = [
@@ -35,113 +28,54 @@ class ProfileScreen extends StatelessWidget {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.background.withOpacity(0.98),
       drawer: HeaderNavigator.buildDrawer(context),
       body: SafeArea(
         child: Column(
           children: [
-            // Add HeaderNavigator at the top
             HeaderNavigator(
               currentRoute: 'profile',
               userName: 'Mr. Yesen Kandalama',
               onMenuPressed: () => _handleMenuPress(context),
-              onSearchPressed: _handleSearchPress,
-              onProfilePressed: _handleProfilePress,
+              onSearchPressed: () {},
+              onProfilePressed: () {},
             ),
-            // Wrap the rest of the content in Expanded and SingleChildScrollView
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-                      padding: const EdgeInsets.all(16.0),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(16.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 30,
-                            backgroundColor: AppColors.primaryLight,
-                            child: Icon(
-                              Icons.person,
-                              color: AppColors.accent,
-                              size: 30,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Mr. Yesen Kandalama',
-                                  style: AppTextStyles.h2,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Premium Member',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {},
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: const Size(0, 30),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: Text(
-                                    'Log out',
-                                    style: AppTextStyles.link.copyWith(
-                                      color: Colors.red,
-                                      decoration: TextDecoration.none,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildProfileInfo(),
+                    const SizedBox(height: 20),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Row(
                         children: [
                           Expanded(
-                            child: _buildQuickStatCard(
+                            child: _buildGlassStatCard(
                               'Total Spending',
                               '\$2,450.80',
-                              Icons.account_balance_wallet,
-                              AppColors.textSecondary,
+                              CupertinoIcons.money_dollar_circle,
+                              AppColors.spendingRed,
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: _buildQuickStatCard(
+                            child: _buildGlassStatCard(
                               'Total Savings',
                               '\$850.20',
-                              Icons.savings,
-                              AppColors.success,
+                              CupertinoIcons.briefcase_fill,
+                              AppColors.savingsGreen,
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 20),
+                    
                     const AnalyticsGraph(),
+
+                    const SizedBox(height: 20),
                     ExpensesList(expenses: expenses),
                     Padding(
                       padding: const EdgeInsets.all(20.0),
@@ -153,13 +87,13 @@ class ProfileScreen extends StatelessWidget {
                             children: [
                               const Text(
                                 'Investments',
-                                style: AppTextStyles.h2,
+                                style: AppTextStyles.profileTitle,
                               ),
                               TextButton(
                                 onPressed: () {},
                                 child: const Text(
                                   'See All',
-                                  style: AppTextStyles.link,
+                                  style: AppTextStyles.linkText,
                                 ),
                               ),
                             ],
@@ -171,7 +105,7 @@ class ProfileScreen extends StatelessWidget {
                                 child: _buildInvestmentCard(
                                   'Stock Market',
                                   'Up 8.2%',
-                                  Icons.show_chart,
+                                  CupertinoIcons.graph_square,
                                   true,
                                 ),
                               ),
@@ -180,7 +114,7 @@ class ProfileScreen extends StatelessWidget {
                                 child: _buildInvestmentCard(
                                   'Fixed Deposit',
                                   'Up 3.5%',
-                                  Icons.account_balance,
+                                  CupertinoIcons.lock_shield_fill,
                                   true,
                                 ),
                               ),
@@ -194,7 +128,6 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
-            // Footer stays outside the ScrollView
             const FooterNavigator(currentRoute: 'profile'),
           ],
         ),
@@ -202,58 +135,157 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildProfileInfo() {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+      padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16.0),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.surface.withOpacity(0.95),
+            AppColors.surface.withOpacity(0.85),
+          ],
+          stops: const [0.1, 0.9],
+        ),
+        borderRadius: BorderRadius.circular(24.0),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.9),
+            blurRadius: 20,
+            offset: const Offset(-5, -5),
+            spreadRadius: 0,
+          ),
+        ],
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: Colors.grey[600],
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: CircleAvatar(
+              radius: 35,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              child: Icon(
+                CupertinoIcons.person_alt_circle,
+                color: AppColors.primary,
+                size: 35,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: AppTextStyles.h3.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
+          const SizedBox(width: 16),
+          
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mr. Yesen Kandalama',
+                  style: AppTextStyles.profileTitle.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 25,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        AppColors.primary.withOpacity(0.12),
+                        AppColors.primaryLight.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.15),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Text(
+                    'Premium Member',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {},
+                  child: Text(
+                    'Log out',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error.withOpacity(0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildInvestmentCard(
-    String title,
-    String performance,
-    IconData icon,
-    bool isPositive,
-  ) {
+  Widget _buildGlassStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(16.0),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.9),
+            Colors.white.withOpacity(0.7),
+          ],
+          stops: const [0.1, 0.9],
+        ),
+        borderRadius: BorderRadius.circular(24.0),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.7),
+            blurRadius: 20,
+            offset: const Offset(-5, -5),
+            spreadRadius: 0,
           ),
         ],
       ),
@@ -261,38 +293,114 @@ class ProfileScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.0),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 20,
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 12),
           Text(
             title,
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontWeight: FontWeight.w500,
+            style: AppTextStyles.glassStatTitle.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTextStyles.glassStatValue.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvestmentCard(String title, String performance, IconData icon, bool isPositive) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.08),
+            AppColors.primaryLight.withOpacity(0.05),
+          ],
+          stops: const [0.1, 0.9],
+        ),
+        borderRadius: BorderRadius.circular(24.0),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.9),
+            blurRadius: 20,
+            offset: const Offset(-5, -5),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: AppTextStyles.profileSubtitle.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
           Row(
             children: [
               Icon(
-                isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                isPositive ? CupertinoIcons.arrow_up : CupertinoIcons.arrow_down,
                 color: isPositive ? AppColors.success : AppColors.error,
                 size: 16,
               ),
               const SizedBox(width: 4),
               Text(
                 performance,
-                style: AppTextStyles.bodySmall.copyWith(
+                style: AppTextStyles.profileSubtitle.copyWith(
                   color: isPositive ? AppColors.success : AppColors.error,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],

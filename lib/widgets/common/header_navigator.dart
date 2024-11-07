@@ -1,5 +1,5 @@
-// header_navigator.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../screens/common/expenses_screen.dart';
@@ -29,7 +29,6 @@ class HeaderNavigator extends StatelessWidget {
   static void _handleNavigation(BuildContext context, String route) {
     Navigator.pop(context); // Close drawer first
 
-    // Handle navigation based on route
     switch (route) {
       case 'expenses':
         Navigator.push(
@@ -43,12 +42,11 @@ class HeaderNavigator extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const NotificationScreen(),
+            builder: (context) => NotificationScreen(),
           ),
         );
         break;
       case 'meetings':
-
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -65,7 +63,7 @@ class HeaderNavigator extends StatelessWidget {
             builder: (context) => const AnalyticsScreen(),
           ),
         );
-
+        break;
       case 'Profeshanals':
         Navigator.push(
           context,
@@ -73,26 +71,37 @@ class HeaderNavigator extends StatelessWidget {
             builder: (context) => ProfessionalListScreen(),
           ),
         );
-
+        break;
       case 'settings':
       case 'help':
-        // For screens that aren't implemented yet, show a snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$route screen is under development'),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
         );
         break;
       case 'logout':
-        // Show logout confirmation dialog
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: const Text('Confirm Logout'),
-              content: const Text('Are you sure you want to logout?'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                'Confirm Logout',
+                style: AppTextStyles.h3,
+              ),
+              content: Text(
+                'Are you sure you want to logout?',
+                style: AppTextStyles.bodyMedium,
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
@@ -100,26 +109,30 @@ class HeaderNavigator extends StatelessWidget {
                     'Cancel',
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
                 TextButton(
                   onPressed: () {
-                    // Add your logout logic here
-                    // For now, just show a snackbar
-                    Navigator.pop(context); // Close dialog
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Logout functionality will be implemented soon'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: const Text('Logout functionality will be implemented soon'),
+                        duration: const Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     );
                   },
                   child: Text(
                     'Logout',
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.red,
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -131,111 +144,160 @@ class HeaderNavigator extends StatelessWidget {
     }
   }
 
-  // Static method to build drawer
   static Drawer buildDrawer(BuildContext context) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.surface,
-                  child: Icon(
-                    Icons.person,
-                    color: AppColors.primary,
-                    size: 30,
-                  ),
+      backgroundColor: AppColors.surface,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        transform: Matrix4.translationValues(0, 0, 0)..scale(1.02),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primaryLight,
+                  ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'Menu',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.white.withOpacity(0.8), Colors.white],
+                      ),
+                    ),
+                    child: const CircleAvatar(
+                      radius: 30,
+                      backgroundColor: AppColors.surface,
+                      child: Icon(
+                        CupertinoIcons.person_fill,
+                        color: AppColors.primary,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Menu',
+                    style: AppTextStyles.h3.copyWith(
+                      color: Colors.white,
+                      fontSize: 24,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
             ),
-          ),
-          _buildDrawerItem(
-            icon: Icons.dashboard,
-            title: 'Dashboard',
-            onTap: () => _handleNavigation(context, 'dashboard'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.account_balance_wallet,
-            title: 'Expenses',
-            onTap: () => _handleNavigation(context, 'expenses'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.notifications,
-            title: 'Notifications',
-            onTap: () => _handleNavigation(context, 'notifications'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.calendar_view_day_rounded,
-            title: 'meetings',
-            onTap: () => _handleNavigation(context, 'meetings'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.history,
-            title: 'History',
-            onTap: () => _handleNavigation(context, 'history'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.show_chart,
-            title: 'Statistics',
-            onTap: () => _handleNavigation(context, 'statistics'),
-          ),
-          const Divider(),
-          _buildDrawerItem(
-            icon: Icons.settings,
-            title: 'Profeshanals',
-            onTap: () => _handleNavigation(context, 'Profeshanals'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.settings,
-            title: 'Settings',
-            onTap: () => _handleNavigation(context, 'settings'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.help,
-            title: 'Help & Support',
-            onTap: () => _handleNavigation(context, 'help'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.logout,
-            title: 'Logout',
-            onTap: () => _handleNavigation(context, 'logout'),
-          ),
-        ],
+            _buildDrawerItem(
+              icon: CupertinoIcons.chart_bar_fill,
+              title: 'Dashboard',
+              onTap: () => _handleNavigation(context, 'dashboard'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.money_dollar_circle_fill,
+              title: 'Expenses',
+              onTap: () => _handleNavigation(context, 'expenses'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.bell_fill,
+              title: 'Notifications',
+              onTap: () => _handleNavigation(context, 'notifications'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.calendar,
+              title: 'Meetings',
+              onTap: () => _handleNavigation(context, 'meetings'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.clock_fill,
+              title: 'History',
+              onTap: () => _handleNavigation(context, 'history'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.graph_circle_fill,
+              title: 'Statistics',
+              onTap: () => _handleNavigation(context, 'statistics'),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Divider(
+                color: AppColors.inputBorder,
+                height: 32,
+              ),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.person_2_fill,
+              title: 'Professionals',
+              onTap: () => _handleNavigation(context, 'Profeshanals'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.settings_solid,
+              title: 'Settings',
+              onTap: () => _handleNavigation(context, 'settings'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.question_circle_fill,
+              title: 'Help & Support',
+              onTap: () => _handleNavigation(context, 'help'),
+            ),
+            _buildDrawerItem(
+              icon: CupertinoIcons.square_arrow_left_fill,
+              title: 'Logout',
+              onTap: () => _handleNavigation(context, 'logout'),
+              isDestructive: true,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Rest of the class remains the same...
   static Widget _buildDrawerItem({
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.primaryLight),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+      leading: Icon(
+        icon,
+        color: isDestructive ? AppColors.error : AppColors.primary,
+        size: 22,
+      ),
       title: Text(
         title,
         style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.primaryLight,
+          color: isDestructive ? AppColors.error : AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
         ),
       ),
       onTap: onTap,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      hoverColor: AppColors.primary.withOpacity(0.05),
+      selectedTileColor: AppColors.primary.withOpacity(0.1),
     );
   }
 
@@ -258,84 +320,134 @@ class HeaderNavigator extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Build method remains the same...
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        shape: BoxShape.circle,
+        color: AppColors.primary.withOpacity(0.08),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: AppColors.primary.withOpacity(0.05),
+            blurRadius: 4,
             offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
         ],
       ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            child: Icon(
+              icon,
+              color: AppColors.primary.withOpacity(0.9),
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface.withOpacity(0.98),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      margin: const EdgeInsets.only(bottom: 2),
       child: SafeArea(
         bottom: false,
         child: Container(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Left side - Menu and Title
-                  Expanded(
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.menu),
-                          onPressed: onMenuPressed,
-                          color: AppColors.textPrimary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _getScreenTitle(),
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+              Expanded(
+                child: Row(
+                  children: [
+                    _buildIconButton(
+                      icon: CupertinoIcons.bars,
+                      onPressed: onMenuPressed,
                     ),
-                  ),
-                  // Right side - Search and Profile
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: onSearchPressed,
+                    const SizedBox(width: 12),
+                    Text(
+                      _getScreenTitle(),
+                      style: AppTextStyles.h3.copyWith(
                         color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: onProfilePressed,
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundColor: AppColors.accent.withOpacity(0.1),
-                              backgroundImage: userAvatar != null
-                                  ? NetworkImage(userAvatar!)
-                                  : null,
-                              child: userAvatar == null
-                                  ? Text(
-                                      userName.isNotEmpty
-                                          ? userName[0].toUpperCase()
-                                          : '?',
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        color: AppColors.accent,
-                                      ),
-                                    )
-                                  : null,
-                            ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  _buildIconButton(
+                    icon: CupertinoIcons.search,
+                    onPressed: onSearchPressed,
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: onProfilePressed,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary.withOpacity(0.9),
+                            AppColors.primaryLight,
                           ],
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                            spreadRadius: 0,
+                          ),
+                        ],
                       ),
-                    ],
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.white,
+                        backgroundImage: userAvatar != null
+                            ? NetworkImage(userAvatar!)
+                            : null,
+                        child: userAvatar == null
+                            ? Text(
+                                userName.isNotEmpty
+                                    ? userName[0].toUpperCase()
+                                    : '?',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
                   ),
                 ],
               ),

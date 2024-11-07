@@ -23,7 +23,7 @@ class PaymentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     const double amount = 1500.00;
     const double adminFee = 150.50;
-    const double total = amount + adminFee;
+    final double total = amount + adminFee;
 
     return Scaffold(
       appBar: AppBar(

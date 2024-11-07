@@ -1,159 +1,265 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
-import 'profile_screen.dart'; // Add this import
-import 'register_screen.dart'; // Add this import
+import 'profile_screen.dart';
+import 'register_screen.dart';
 
-class LoginScreen extends StatelessWidget {
-  LoginScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _passwordVisible = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.background.withOpacity(0.98),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Status Bar Space and Logo Area
-              const SizedBox(height: 40),
-              const Text(
-                'BENJI',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              
-              // Decorative Hexagon (You'll need to implement or use an asset)
-              const SizedBox(height: 120),
-
-              // Welcome Text
-              const Text(
-                'Welcome Back!',
-                style: AppTextStyles.h1,
-              ),
-              const SizedBox(height: 40),
-
-              // Email Input
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Email Address',
-                    style: AppTextStyles.bodyMedium,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Logo
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _emailController,
-                    style: AppTextStyles.input,
-                    decoration: const InputDecoration(
-                      hintText: 'alexander@gmail.com',
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'images/benji_logo.svg',
+                      width: 100,
+                      height: 100,
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                ),
+                const SizedBox(height: 32),
 
-              // Password Input
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Password',
-                    style: AppTextStyles.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    style: AppTextStyles.input,
-                    decoration: InputDecoration(
-                      suffixIcon: IconButton(
-                        icon: const Icon(
-                          Icons.visibility_outlined,
-                          color: AppColors.textHint,
-                        ),
-                        onPressed: () {
-                          // Toggle password visibility
-                        },
+                // Title and Tagline
+                Column(
+                  children: [
+                    Text(
+                      'BENJI',
+                      style: AppTextStyles.h1.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Budget Smarter, Not Harder!',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 40),
+
+                // Input Fields
+                _buildInputField(
+                  label: 'Email Address',
+                  hint: 'example@gmail.com',
+                  controller: _emailController,
+                  isPassword: false,
+                  icon: CupertinoIcons.mail,
+                ),
+                const SizedBox(height: 24),
+
+                _buildInputField(
+                  label: 'Password',
+                  hint: '••••••••',
+                  controller: _passwordController,
+                  isPassword: true,
+                  icon: CupertinoIcons.lock,
+                ),
+
+                // Forgot Password
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {},
+                    child: Text(
+                      'Forgot Password?',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 32),
 
-              // Forgot Password
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {
-                    // Handle forgot password
-                  },
-                  child: Text(
-                    'Forgot Password?',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
+                // Login Button
+                Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary,
+                        AppColors.primary.withOpacity(0.8),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: Center(
+                        child: Text(
+                          'Log In',
+                          style: AppTextStyles.button.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 32),
 
-              const SizedBox(height: 24),
-
-              // Login Button with Navigation
-              ElevatedButton(
-                onPressed: () {
-                  // Navigate to profile screen
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProfileScreen(),
+                // Sign Up Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
-                  );
-                },
-                child: const Text('login'),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Sign Up Link
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Don't have an account? ",
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      // Navigate to profile screen
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegisterScreen(),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Sign Up',
+                        style: AppTextStyles.link.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
                         ),
-                      );
-                    },
-                    child: const Text(
-                      'Sign Up',
-                      style: AppTextStyles.link,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required bool isPassword,
+    required IconData icon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 12),
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextField(
+            controller: controller,
+            obscureText: isPassword && !_passwordVisible,
+            style: AppTextStyles.input.copyWith(
+              color: AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: AppTextStyles.inputHint,
+              filled: true,
+              fillColor: Colors.transparent,
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              prefixIcon: Icon(
+                icon,
+                color: AppColors.primary.withOpacity(0.7),
+                size: 22,
+              ),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        _passwordVisible
+                            ? CupertinoIcons.eye_slash_fill
+                            : CupertinoIcons.eye_fill,
+                        color: AppColors.primary.withOpacity(0.7),
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _passwordVisible = !_passwordVisible;
+                        });
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+            ),
+          ),
+        ],
       ),
     );
   }
