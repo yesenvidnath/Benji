@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
+import '../../../screens/common/profile_screen.dart';
 import '../../../screens/common/expenses_screen.dart';
 import '../../../screens/common/analytics_screen.dart';
 import '../../../screens/common/notifications_screen.dart';
@@ -18,7 +19,10 @@ class FooterNavigator extends StatelessWidget {
     if (currentRoute != route) {
       switch (route) {
         case 'home':
-          // Navigator.pushNamed(context, '/home');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ProfileScreen()),
+          );
           break;
         case 'expenses':
           Navigator.push(
@@ -36,6 +40,12 @@ class FooterNavigator extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AnalyticsScreen()),
+          );
+          break;
+        case 'profile':
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ProfileScreen()),
           );
           break;
       }
@@ -60,7 +70,7 @@ class FooterNavigator extends StatelessWidget {
           width: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [

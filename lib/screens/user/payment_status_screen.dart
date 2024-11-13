@@ -1,9 +1,9 @@
-// lib/screens/user/payment_status_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../widgets/common/footer_navigator.dart';
+import '../../../widgets/common/header_navigator.dart';
 
 enum PaymentStatus {
   success,
@@ -16,8 +16,9 @@ class PaymentStatusScreen extends StatelessWidget {
   final String professionalRole;
   final double amount;
   final double adminFee;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   
-  const PaymentStatusScreen({
+  PaymentStatusScreen({
     super.key,
     this.status = PaymentStatus.success,
     required this.professionalName,
@@ -26,201 +27,257 @@ class PaymentStatusScreen extends StatelessWidget {
     required this.adminFee,
   });
 
+  void _handleMenuPress(BuildContext context) {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
   @override
   Widget build(BuildContext context) {
     final double total = amount + adminFee;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Payment'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 24),
-                  // Status Circle
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0xFF0A0F44),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Payment',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
+      key: _scaffoldKey,
+      backgroundColor: AppColors.background.withOpacity(0.98),
+      drawer: HeaderNavigator.buildDrawer(context),
+      body: SafeArea(
+        child: Column(
+          children: [
+            HeaderNavigator(
+              currentRoute: 'payment',
+              userName: 'Payment Status',
+              onMenuPressed: () => _handleMenuPress(context),
+              onSearchPressed: () {},
+              onProfilePressed: () {},
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 24),
+                    // Status Icon
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: status == PaymentStatus.success 
+                            ? AppColors.success.withOpacity(0.1)
+                            : AppColors.error.withOpacity(0.1),
+                      ),
+                      child: Icon(
+                        status == PaymentStatus.success 
+                            ? CupertinoIcons.checkmark_circle_fill
+                            : CupertinoIcons.xmark_circle_fill,
+                        size: 40,
+                        color: status == PaymentStatus.success 
+                            ? AppColors.success 
+                            : AppColors.error,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  
-                  // Professional Info Card
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 16),
+                    Text(
+                      status == PaymentStatus.success 
+                          ? 'Payment Successful!' 
+                          : 'Payment Failed',
+                      style: AppTextStyles.h2.copyWith(
+                        color: status == PaymentStatus.success 
+                            ? AppColors.success 
+                            : AppColors.error,
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor: AppColors.primaryLight,
-                          child: Text(
-                            professionalName[0],
-                            style: AppTextStyles.h2,
+                    
+                    // Professional Info Card
+                    Container(
+                      margin: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          professionalName,
-                          style: AppTextStyles.bodyLarge,
-                        ),
-                        Text(
-                          professionalRole,
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: AppColors.primaryLight,
+                            child: Text(
+                              professionalName[0],
+                              style: AppTextStyles.h1,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            professionalName,
+                            style: AppTextStyles.h3,
+                          ),
+                          Text(
+                            professionalRole,
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          _buildPaymentDetailRow(
+                            'Service Fee',
+                            'Rs.${amount.toStringAsFixed(2)}',
+                            CupertinoIcons.money_dollar,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildPaymentDetailRow(
+                            'Admin Fee',
+                            'Rs.${adminFee.toStringAsFixed(2)}',
+                            CupertinoIcons.doc_text,
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Divider(),
+                          ),
+                          _buildPaymentDetailRow(
+                            'Total Amount',
+                            'Rs.${total.toStringAsFixed(2)}',
+                            CupertinoIcons.cart,
+                            isTotal: true,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  
-                  // Payment Details
-                  Container(
-                    margin: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        _buildPaymentRow('Amount', 'Rs.${amount.toStringAsFixed(2)}'),
-                        const SizedBox(height: 12),
-                        _buildPaymentRow('Admin fee', 'Rs.${adminFee.toStringAsFixed(2)}'),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: Divider(color: AppColors.inputBorder),
-                        ),
-                        _buildPaymentRow('Total', 'Rs.${total.toStringAsFixed(2)}'),
-                      ],
-                    ),
-                  ),
 
-                  // Status Message
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Column(
-                      children: [
-                        Icon(
-                          status == PaymentStatus.success 
-                              ? Icons.check_circle 
-                              : Icons.error,
-                          size: 64,
-                          color: status == PaymentStatus.success 
-                              ? AppColors.success 
-                              : AppColors.error,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          status == PaymentStatus.success 
-                              ? 'Payment Successful!' 
-                              : 'Payment Failed',
-                          style: AppTextStyles.h2.copyWith(
-                            color: status == PaymentStatus.success 
-                                ? AppColors.success 
-                                : AppColors.error,
+                    // Transaction ID
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          status == PaymentStatus.success 
-                              ? 'Your payment has been processed successfully'
-                              : 'There was an error processing your payment',
-                          style: AppTextStyles.bodyMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Barcode
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    height: 80,
-                    decoration: BoxDecoration(
-                      image: const DecorationImage(
-                        image: AssetImage('assets/images/barcode.png'),
-                        fit: BoxFit.fitWidth,
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Transaction ID',
+                            style: AppTextStyles.bodyMedium,
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                '#TRX${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Icon(CupertinoIcons.doc_on_doc, size: 18, color: Colors.blue),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    
+                    const SizedBox(height: 32),
+                    // Action Buttons
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 56,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary,
+                                    AppColors.primary.withOpacity(0.8),
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                                  child: Center(
+                                    child: Text(
+                                      'Back to Home',
+                                      style: AppTextStyles.button.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(CupertinoIcons.share, color: Color(0xFF0A0F44)),
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.buttonPrimary.withOpacity(0.1),
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
-          ),
-          
-          // Action Button
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Navigate back to home or show receipt
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0A0F44),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  status == PaymentStatus.success ? 'Back to Home' : 'Try Again',
-                  style: AppTextStyles.button.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          const FooterNavigator(currentRoute: 'profile'),
-        ],
+            const FooterNavigator(currentRoute: 'profile'),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPaymentRow(String label, String amount) {
+  Widget _buildPaymentDetailRow(String label, String amount, IconData icon, {bool isTotal = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.bodyMedium,
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isTotal ? AppColors.primaryButton : AppColors.primaryButton,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: isTotal ? Colors.black87 : Colors.black54,
+                fontWeight: isTotal ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
         Text(
           amount,
           style: AppTextStyles.bodyLarge.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
+            color: isTotal ? AppColors.primaryButton : AppColors.primaryButton,
           ),
         ),
       ],

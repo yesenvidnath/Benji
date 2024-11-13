@@ -14,25 +14,13 @@ class AddExpensesScreen extends StatefulWidget {
 }
 
 class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTickerProviderStateMixin {
+
   final _formKey = GlobalKey<FormState>();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late TabController _tabController;
   
   final List<ExpenseItem> _pendingExpenses = [];
-  final List<ExpenseItem> _savedExpenses = [
-    ExpenseItem(
-      date: DateTime(2024, 1, 13),
-      amount: 230.00,
-      description: 'Grocery Shopping',
-      category: 'Food',
-    ),
-    ExpenseItem(
-      date: DateTime(2024, 2, 13),
-      amount: -390.00,
-      description: 'Monthly Rent',
-      category: 'Housing',
-    ),
-  ];
+  final List<ExpenseItem> _savedExpenses = [];
 
   // Form Controllers
   final _amountController = TextEditingController();
@@ -49,6 +37,7 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
     'Shopping',
     'Bills',
     'Entertainment',
+    'Freelancing',
     'Health',
     'Education',
     'Other'
@@ -60,12 +49,12 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
     _tabController = TabController(length: 2, vsync: this);
   }
 
-  void _handleMenuPress() {
+  void _handleMenuPress(BuildContext context) {
     _scaffoldKey.currentState?.openDrawer();
   }
 
-  void _addExpense() {
-    if (_formKey.currentState!.validate()) {
+ void _addExpense() {
+    if (_formKey.currentState!.validate() && _selectedCategory != null) {
       final newExpense = ExpenseItem(
         date: _selectedDate,
         amount: double.parse(_amountController.text),
@@ -75,12 +64,51 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
       
       setState(() {
         _pendingExpenses.insert(0, newExpense);
-        // Clear form for next entry but keep the date if shared
-        _amountController.clear();
-        _descriptionController.clear();
-        _selectedCategory = null;
+        _clearForm(keepDate: _useSharedDate);
       });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Expense added successfully!')),
+      );
+    } else {
+      // Show error message if category is not selected
+      if (_selectedCategory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a category')),
+        );
+      }
     }
+  }
+
+  void _clearForm({bool keepDate = false}) {
+    _amountController.clear();
+    _descriptionController.clear();
+    _selectedCategory = null;
+    if (!keepDate && !_useSharedDate) {
+      setState(() => _selectedDate = DateTime.now());
+    }
+  }
+
+  void _editExpense(ExpenseItem expense) {
+    setState(() {
+      _amountController.text = expense.amount.toString();
+      _descriptionController.text = expense.description ?? '';
+      _selectedCategory = expense.category;
+      if (!_useSharedDate) {
+        _selectedDate = expense.date;
+      }
+    });
+  }
+
+  void _removeExpense(int index, bool isPending) {
+    setState(() {
+      if (isPending) {
+        _pendingExpenses.removeAt(index);
+      } else {
+        _savedExpenses.removeAt(index);
+      }
+    });
   }
 
   void _saveAllExpenses() {
@@ -88,71 +116,155 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
       setState(() {
         _savedExpenses.insertAll(0, _pendingExpenses);
         _pendingExpenses.clear();
-        // Reset shared date after saving
         _useSharedDate = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('All expenses saved successfully!')),
       );
-      _tabController.animateTo(1); // Switch to saved expenses tab
+      _tabController.animateTo(1); // Switch to Saved Expenses tab
     }
+  }
+
+  Future<void> _showDatePicker() async {
+   await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 300,
+          color: Colors.white,
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: Text('Cancel', style: TextStyle(color: Colors.blue)),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                  CupertinoButton(
+                    child: Text('Done', style: TextStyle(color: Colors.blue)),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        if (_useSharedDate) {
+                          for (var expense in _pendingExpenses) {
+                            expense.date = _selectedDate;
+                          }
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: _selectedDate,
+                  onDateTimeChanged: (DateTime newDate) {
+                    setState(() => _selectedDate = newDate);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildDateSelector() {
     return Column(
       children: [
-        SwitchListTile(
-          title: const Text('Use shared date for all expenses'),
-          value: _useSharedDate,
-          onChanged: (bool value) {
-            setState(() => _useSharedDate = value);
-          },
-          activeColor: AppColors.primary,
-        ),
-        if (_useSharedDate) 
-          InkWell(
-            onTap: () async {
-              final DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2025),
-              );
-              if (picked != null) {
-                setState(() {
-                  _selectedDate = picked;
-                  // Update all pending expenses with new date
-                  if (_pendingExpenses.isNotEmpty) {
-                    for (var expense in _pendingExpenses) {
-                      expense.date = picked;
-                    }
-                  }
-                });
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                border: Border.all(color: AppColors.inputBorder),
-                borderRadius: BorderRadius.circular(8),
-                color: AppColors.surface,
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Shared Date:'),
-                  Row(
-                    children: [
-                      Text(_dateFormat.format(_selectedDate)),
-                      const SizedBox(width: 8),
-                      const Icon(CupertinoIcons.calendar),
-                    ],
-                  ),
-                ],
+            ],
+          ),
+          child: SwitchListTile(
+            title: Text(
+              'Use shared date for all expenses',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: Colors.black87,
               ),
             ),
+            value: _useSharedDate,
+            activeColor: Colors.blue,
+            onChanged: (bool value) {
+              setState(() => _useSharedDate = value);
+            },
           ),
+        ),
+        InkWell(
+          onTap: _showDatePicker,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(CupertinoIcons.calendar, color: Colors.blue),
+                const SizedBox(width: 12),
+                Text(
+                  _dateFormat.format(_selectedDate),
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
+    );
+  }
+
+
+  Widget _buildInputField({
+      required Widget child,
+      required IconData icon,
+    }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: Icon(
+              icon,
+              color: AppColors.primary.withOpacity(0.7),
+              size: 22,
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 
@@ -160,69 +272,194 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
     return Form(
       key: _formKey,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildDateSelector(),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: TextFormField(
-                  controller: _amountController,
-                  decoration: const InputDecoration(
-                    labelText: 'Amount',
-                    prefixIcon: Icon(CupertinoIcons.money_dollar),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Required';
-                    if (double.tryParse(value) == null) return 'Invalid number';
-                    return null;
-                  },
+          // Amount Field
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: _amountController,
+              style: AppTextStyles.input,
+              decoration: InputDecoration(
+                prefixIcon: Icon(CupertinoIcons.money_dollar, color: Colors.blue),
+                labelText: 'Amount',
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(16),
+                labelStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.black54,
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 3,
-                child: DropdownButtonFormField<String>(
-                  value: _selectedCategory,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    prefixIcon: Icon(CupertinoIcons.tag),
-                  ),
-                  items: _categories.map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Required';
+                if (double.tryParse(value) == null) return 'Invalid number';
+                return null;
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Category Selector
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ListTile(
+              leading: Icon(CupertinoIcons.tag, color: Colors.blue),
+              title: Text(
+                _selectedCategory ?? 'Select Category',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: _selectedCategory != null ? Colors.black87 : Colors.black54,
+                ),
+              ),
+              trailing: Icon(CupertinoIcons.chevron_down, color: Colors.blue),
+              onTap: () {
+                showCupertinoModalPopup(
+                  context: context,
+                  builder: (BuildContext context) {
+                    String? tempCategory = _selectedCategory;
+                    return Container(
+                      height: 250,
+                      color: Colors.white,
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              CupertinoButton(
+                                child: Text('Cancel', style: TextStyle(color: Colors.blue)),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              CupertinoButton(
+                                child: Text('Done', style: TextStyle(color: Colors.blue)),
+                                onPressed: () {
+                                  setState(() => _selectedCategory = tempCategory);
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
+                          ),
+                          Expanded(
+                            child: CupertinoPicker(
+                              itemExtent: 32,
+                              onSelectedItemChanged: (index) {
+                                tempCategory = _categories[index];
+                              },
+                              children: _categories.map((category) {
+                                return Text(
+                                  category,
+                                  style: TextStyle(color: Colors.black87),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
-                  }).toList(),
-                  validator: (value) => value == null ? 'Required' : null,
-                  onChanged: (String? newValue) {
-                    setState(() => _selectedCategory = newValue);
                   },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Description Field
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: TextFormField(
+              controller: _descriptionController,
+              style: AppTextStyles.input,
+              decoration: InputDecoration(
+                prefixIcon: Icon(CupertinoIcons.text_alignleft, color: Colors.blue),
+                labelText: 'Description (Optional)',
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.all(16),
+                labelStyle: AppTextStyles.bodyMedium.copyWith(
+                  color: Colors.black54,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _descriptionController,
-            decoration: const InputDecoration(
-              labelText: 'Description (Optional)',
-              prefixIcon: Icon(CupertinoIcons.text_justifyleft),
+              maxLines: 3,
             ),
           ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _addExpense,
-            icon: const Icon(Icons.add),
-            label: const Text('Add to List'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          const SizedBox(height: 24),
+          // Add to List Button
+          Container(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: _addExpense,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                elevation: 2,
+              ),
+              child: Text(
+                '+ Add to List',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
+          if (_pendingExpenses.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildExpenseList(_pendingExpenses, true),
+            const SizedBox(height: 16),
+            // Save All Button
+            Container(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: _saveAllExpenses,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  'Save All',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -232,8 +469,10 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
     if (expenses.isEmpty) {
       return Center(
         child: Text(
-          isPending ? 'Add some expenses to the list' : 'No saved expenses yet',
-          style: AppTextStyles.bodyLarge,
+          'No expenses added yet',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
       );
     }
@@ -244,32 +483,124 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
       itemCount: expenses.length,
       itemBuilder: (context, index) {
         final expense = expenses[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              child: Icon(
-                CupertinoIcons.money_dollar,
-                color: AppColors.primary,
-              ),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            title: Text(expense.description ?? expense.category),
-            subtitle: Text('${expense.category} • ${_dateFormat.format(expense.date)}'),
-            trailing: Text(
-              '\$${expense.amount.toStringAsFixed(2)}',
-              style: AppTextStyles.h3.copyWith(
-                color: expense.amount < 0 ? Colors.red : Colors.green,
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    '\$',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
+              title: Text(
+                expense.category,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              subtitle: Text(
+                _dateFormat.format(expense.date),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '\$${expense.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: expense.amount >= 0 ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (isPending) ...[
+                    IconButton(
+                      icon: Icon(CupertinoIcons.pencil, 
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
+                      onPressed: () => _editExpense(expense),
+                    ),
+                    IconButton(
+                      icon: Icon(CupertinoIcons.trash, 
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
+                      onPressed: () => _removeExpense(index, isPending),
+                    ),
+                  ],
+                ],
+              ),
+              onTap: isPending ? () => _editExpense(expense) : null,
             ),
-            onLongPress: isPending ? () {
-              setState(() {
-                expenses.removeAt(index);
-              });
-            } : null,
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSaveAllButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withOpacity(0.8),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: _saveAllExpenses,
+          child: Center(
+            child: Text(
+              'Save All',
+              style: AppTextStyles.button.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -277,7 +608,7 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.grey[100],
       drawer: HeaderNavigator.buildDrawer(context),
       body: SafeArea(
         child: Column(
@@ -285,60 +616,63 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
             HeaderNavigator(
               currentRoute: 'expenses',
               userName: 'Expenses',
-              onMenuPressed: _handleMenuPress,
+              onMenuPressed: () => _handleMenuPress(context),
               onSearchPressed: () {},
               onProfilePressed: () {},
             ),
-            TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: 'Add Expenses'),
-                Tab(text: 'Saved Expenses'),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  labelStyle: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                  unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
+                    fontSize: 15,
+                  ),
+                  labelColor: Colors.blue,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.blue.withOpacity(0.1),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  overlayColor: MaterialStateProperty.all(Colors.transparent),
+                  tabs: const [
+                    Tab(text: 'Add Expenses'),
+                    Tab(text: 'Saved Expenses'),
+                  ],
+                ),
+              ),
             ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  // Add Expenses Tab
                   SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildExpenseForm(),
-                        if (_pendingExpenses.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Pending Expenses', style: AppTextStyles.h2),
-                              ElevatedButton(
-                                onPressed: _saveAllExpenses,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                ),
-                                child: const Text('Save All'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildExpenseList(_pendingExpenses, true),
-                        ],
                       ],
                     ),
                   ),
-                  // Saved Expenses Tab
                   SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Saved Expenses', style: AppTextStyles.h2),
-                        const SizedBox(height: 16),
-                        _buildExpenseList(_savedExpenses, false),
-                      ],
-                    ),
+                    child: _buildExpenseList(_savedExpenses, false),
                   ),
                 ],
               ),
@@ -349,21 +683,13 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
       bottomNavigationBar: const FooterNavigator(currentRoute: 'expenses'),
     );
   }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _amountController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
 }
 
 class ExpenseItem {
   final double amount;
   final String? description;
   final String category;
-  DateTime date;  // Made mutable to support shared date updates
+  DateTime date;
 
   ExpenseItem({
     required this.date,

@@ -1,9 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
-import 'dart:io';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,68 +10,704 @@ class RegisterScreen extends StatefulWidget {
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
+class IncomeSource {
+  final String source;
+  final double amount;
+  final String frequency;
+  final String description;
+
+  IncomeSource({
+    required this.source,
+    required this.amount,
+    required this.frequency,
+    required this.description,
+  });
+}
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
   bool _agreedToTerms = false;
   bool _hasMultipleIncomes = false;
+  DateTime? _selectedBirthday;
+  bool _passwordVisible = false;
+  String selectedFrequency = 'Monthly';
 
   // Form Controllers
   final _nameController = TextEditingController();
-  final _typeController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final _bankController = TextEditingController();
-  final _singleIncomeSourceController = TextEditingController();
-  final _singleIncomeAmountController = TextEditingController();
-  DateTime? _selectedBirthday;
-  XFile? _profileImage;
-  List<Map<String, String>> incomeSources = [];
+  final _incomeSourceController = TextEditingController();
+  final _incomeAmountController = TextEditingController();
+  final _incomeFrequencyController = TextEditingController();
+  final _incomeDescriptionController = TextEditingController();
 
-  final ImagePicker _picker = ImagePicker();
+  final List<IncomeSource> incomeSources = [];
 
-  @override
-  void initState() {
-    super.initState();
-    // Initialize with one empty income source
-    incomeSources = [{'source': '', 'amount': ''}];
+
+
+  Widget _buildLogo() {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.2),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Center(
+        child: SvgPicture.asset(
+          'images/benji_logo.svg',
+          width: 100,
+          height: 100,
+        ),
+      ),
+    );
   }
 
-  Future<void> _pickImage() async {
-    final pickedImage = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedImage != null) {
-      setState(() {
-        _profileImage = pickedImage;
-      });
-    }
+  Widget _buildCustomInputField({
+    required String label,
+    required Widget child,
+    double bottomMargin = 24,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: bottomMargin),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 12),
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
   }
 
-  Future<void> _takePhoto() async {
-    final photo = await _picker.pickImage(source: ImageSource.camera);
-    if (photo != null) {
-      setState(() {
-        _profileImage = photo;
-      });
-    }
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required TextEditingController controller,
+    bool isPassword = false,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    VoidCallback? onTap,
+    bool readOnly = false,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 12),
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextFormField(
+            controller: controller,
+            obscureText: isPassword && !_passwordVisible,
+            keyboardType: keyboardType,
+            readOnly: readOnly,
+            onTap: onTap,
+            style: AppTextStyles.input.copyWith(
+              color: AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: AppTextStyles.inputHint,
+              filled: true,
+              fillColor: Colors.transparent,
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              prefixIcon: Icon(
+                icon,
+                color: AppColors.primary.withOpacity(0.7),
+                size: 22,
+              ),
+              suffixIcon: isPassword
+                  ? IconButton(
+                      icon: Icon(
+                        _passwordVisible
+                            ? CupertinoIcons.eye_slash_fill
+                            : CupertinoIcons.eye_fill,
+                        color: AppColors.primary.withOpacity(0.7),
+                        size: 22,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _passwordVisible = !_passwordVisible;
+                        });
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+            ),
+            validator: validator,
+          ),
+        ],
+      ),
+    );
   }
 
-  void _selectBirthday(BuildContext context) {
+  void _showFrequencyPicker() {
     showCupertinoModalPopup(
       context: context,
       builder: (_) => Container(
-        height: 250,
-        color: AppColors.surface,
-        child: CupertinoDatePicker(
-          initialDateTime: DateTime(2000, 1, 1),
-          mode: CupertinoDatePickerMode.date,
-          onDateTimeChanged: (DateTime dateTime) {
-            setState(() {
-              _selectedBirthday = dateTime;
-            });
+        height: 216,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: CupertinoPicker(
+            itemExtent: 32.0,
+            onSelectedItemChanged: (int index) {
+              setState(() {
+                selectedFrequency = index == 0 ? 'Monthly' : 'Yearly';
+                _incomeFrequencyController.text = selectedFrequency;
+              });
+            },
+            children: const [
+              Text('Monthly'),
+              Text('Yearly'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIncomeCard(IncomeSource income) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.attach_money,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  income.source,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  income.frequency,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '\$${income.amount.toStringAsFixed(2)}',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.success,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBirthdayPicker() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 216,
+        padding: const EdgeInsets.only(top: 6.0),
+        margin: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: SafeArea(
+          top: false,
+          child: CupertinoDatePicker(
+            initialDateTime: _selectedBirthday ?? DateTime.now().subtract(const Duration(days: 6570)), // Default to 18 years ago
+            maximumDate: DateTime.now().subtract(const Duration(days: 4380)), // Minimum age of 12 years
+            minimumDate: DateTime.now().subtract(const Duration(days: 36500)), // Maximum age of 100 years
+            mode: CupertinoDatePickerMode.date,
+            onDateTimeChanged: (DateTime newDateTime) {
+              setState(() {
+                _selectedBirthday = newDateTime;
+              });
+            },
+          ),
+        ),
+      ),
+    );
+  }
+  
+  void _addIncomeSource() {
+    if (!_hasMultipleIncomes && incomeSources.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Enable multiple incomes to add more sources',
+            style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (_incomeSourceController.text.isEmpty ||
+        _incomeAmountController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Please fill in all required fields',
+            style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      incomeSources.add(
+        IncomeSource(
+          source: _incomeSourceController.text,
+          amount: double.parse(_incomeAmountController.text),
+          frequency: _incomeFrequencyController.text,
+          description: _incomeDescriptionController.text,
+        ),
+      );
+
+      // Clear the input fields
+      _incomeSourceController.clear();
+      _incomeAmountController.clear();
+      _incomeDescriptionController.clear();
+    });
+  }
+
+  Widget _buildStepOne() {
+    return Column(
+      children: [
+        _buildLogo(),
+        const SizedBox(height: 32),
+        Column(
+          children: [
+            Text(
+              'BENJI',
+              style: AppTextStyles.h1.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Create Your Account',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 40),
+        _buildInputField(
+          label: 'Full Name',
+          hint: 'John Doe',
+          icon: CupertinoIcons.person,
+          controller: _nameController,
+          validator: (value) => value?.isEmpty ?? true ? 'Please enter your name' : null,
+        ),
+        _buildInputField(
+            label: 'Birthday',
+            hint: _selectedBirthday != null 
+              ? '${_selectedBirthday!.month}/${_selectedBirthday!.day}/${_selectedBirthday!.year}'
+              : 'Select your birthday',
+            icon: CupertinoIcons.calendar,
+            controller: TextEditingController(
+              text: _selectedBirthday != null 
+                ? '${_selectedBirthday!.month}/${_selectedBirthday!.day}/${_selectedBirthday!.year}'
+                : '',
+            ),
+          readOnly: true,
+          onTap: _showBirthdayPicker,
+          validator: (value) => _selectedBirthday == null ? 'Please select your birthday' : null,
+        ),
+        _buildInputField(
+          label: 'Phone Number',
+          hint: '+1 234 567 8900',
+          icon: CupertinoIcons.phone,
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          validator: (value) => value?.isEmpty ?? true ? 'Please enter your phone number' : null,
+        ),
+        _buildInputField(
+          label: 'Email Address',
+          hint: 'example@gmail.com',
+          icon: CupertinoIcons.mail,
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          validator: (value) => value?.isEmpty ?? true ? 'Please enter your email' : null,
+        ),
+        _buildInputField(
+          label: 'Password',
+          hint: '••••••••',
+          icon: CupertinoIcons.lock,
+          controller: _passwordController,
+          isPassword: true,
+          validator: (value) => value?.isEmpty ?? true ? 'Please enter your password' : null,
+        ),
+        Container(
+          margin: const EdgeInsets.only(bottom: 32),
+          child: Row(
+            children: [
+              Transform.scale(
+                scale: 0.9,
+                child: Checkbox(
+                  value: _agreedToTerms,
+                  onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
+                  activeColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              Text(
+                'I agree to the Terms and Conditions',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _buildPrimaryButton(
+          text: 'Continue',
+          onPressed: () {
+            if (_formKey.currentState?.validate() ?? false) {
+              setState(() => _currentStep = 1);
+            }
           },
+        ),
+        const SizedBox(height: 32),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Already have an account? ',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text(
+                'Sign In',
+                style: AppTextStyles.link.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepTwo() {
+    return Column(
+      children: [
+        _buildLogo(),
+        const SizedBox(height: 32),
+        Text(
+          'Income Details',
+          style: AppTextStyles.h2.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 40),
+
+        // Income source input
+        _buildCustomInputField(
+          label: 'Income Source',
+          child: TextField(
+            controller: _incomeSourceController,
+            decoration: InputDecoration(
+              hintText: 'e.g., Salary, Business',
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              prefixIcon: Icon(
+                CupertinoIcons.doc_text,
+                color: AppColors.primary.withOpacity(0.7),
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+
+        // Amount input
+        _buildCustomInputField(
+          label: 'Amount',
+          child: TextField(
+            controller: _incomeAmountController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: '0.00',
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              prefixIcon: Text(
+                '  \$  ',
+                style: AppTextStyles.h3.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        _buildCustomInputField(
+          label: 'Frequency of Earning',
+          child: GestureDetector(
+            onTap: _showFrequencyPicker,
+            child: AbsorbPointer(
+              child: TextField(
+                controller: _incomeFrequencyController,
+                decoration: InputDecoration(
+                  hintText: 'Select frequency',
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  prefixIcon: Icon(
+                    CupertinoIcons.calendar,
+                    color: AppColors.primary.withOpacity(0.7),
+                    size: 22,
+                  ),
+                  suffixIcon: Icon(
+                    CupertinoIcons.chevron_down,
+                    color: AppColors.primary.withOpacity(0.7),
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Description input
+        _buildCustomInputField(
+          label: 'Description',
+          child: TextField(
+            controller: _incomeDescriptionController,
+            decoration: InputDecoration(
+              hintText: 'Add a description',
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              prefixIcon: Icon(
+                CupertinoIcons.mail,
+                color: AppColors.primary.withOpacity(0.7),
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+
+        // Multiple incomes toggle and Add button
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      'Multiple incomes?',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const Spacer(),
+                    CupertinoSwitch(
+                      value: _hasMultipleIncomes,
+                      onChanged: (value) => setState(() => _hasMultipleIncomes = value),
+                      activeColor: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            ElevatedButton(
+              onPressed: _addIncomeSource,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                '+ Add to List',
+                style: AppTextStyles.button,
+              ),
+            ),
+          ],
+        ),
+
+        // Income cards section
+        if (incomeSources.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 200),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: incomeSources.length,
+              itemBuilder: (context, index) {
+                return _buildIncomeCard(incomeSources[index]);
+              },
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 32),
+        _buildPrimaryButton(
+          text: 'Complete Registration',
+          onPressed: () {
+            if (incomeSources.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Please add at least one income source',
+                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                  ),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+              return;
+            }
+            setState(() => _currentStep = 2);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompletionStep() {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height - 48, // Account for padding
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildLogo(),
+            const SizedBox(height: 32),
+            Text(
+              'Welcome to BENJI!',
+              style: AppTextStyles.h1.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Your account has been successfully created.\nLet's start managing your finances!",
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity, // Make button full width
+              child: _buildPrimaryButton(
+                text: 'Get Started',
+                onPressed: () {
+                  // Navigate to main app screen
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -80,370 +715,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildPrimaryButton({required String text, required VoidCallback onPressed}) {
     return Container(
-      width: double.infinity,
       height: 56,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: Text(
-          text,
-          style: AppTextStyles.button.copyWith(fontSize: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOutlinedButton({required String text, required VoidCallback onPressed}) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: AppColors.primary),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: Text(
-          text,
-          style: AppTextStyles.button.copyWith(color: AppColors.primary, fontSize: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepOne() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Text('Welcome !', style: AppTextStyles.h1),
-        const SizedBox(height: 24),
-
-        // Profile Image Section
-        const Text('Take a Picture', style: AppTextStyles.h2),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: _pickImage,
-          child: CircleAvatar(
-            radius: 50,
-            backgroundColor: AppColors.inputBackground,
-            backgroundImage: _profileImage != null ? FileImage(File(_profileImage!.path)) : null,
-            child: _profileImage == null
-                ? Icon(CupertinoIcons.photo, color: AppColors.primary, size: 50)
-                : null,
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: _takePhoto,
-          child: Text('Take a Photo', style: AppTextStyles.linkText.copyWith(color: AppColors.accent)),
-        ),
-        const SizedBox(height: 20),
-
-        // Birthday Section
-        GestureDetector(
-          onTap: () => _selectBirthday(context),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-            decoration: BoxDecoration(
-              color: AppColors.inputBackground,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.inputBorder),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _selectedBirthday == null ? 'Select your birthday' : '${_selectedBirthday!.toLocal()}'.split(' ')[0],
-                  style: AppTextStyles.input.copyWith(
-                    color: _selectedBirthday == null ? AppColors.textHint : AppColors.textPrimary
-                  ),
-                ),
-                Icon(CupertinoIcons.calendar, color: AppColors.primary),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Name and Email Input
-        TextFormField(
-          controller: _nameController,
-          decoration: const InputDecoration(
-            labelText: 'Name',
-            prefixIcon: Icon(CupertinoIcons.person, color: AppColors.primary)
-          ),
-          style: AppTextStyles.input,
-          validator: (value) => value!.isEmpty ? 'Please enter your name' : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _emailController,
-          decoration: const InputDecoration(
-            labelText: 'Email Address',
-            prefixIcon: Icon(CupertinoIcons.mail),
-          ),
-          style: AppTextStyles.input,
-          validator: (value) => (value!.isEmpty || !value.contains('@')) ? 'Please enter a valid email' : null,
-        ),
-        const SizedBox(height: 16),
-
-        // Agreement Checkbox
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Checkbox(
-              value: _agreedToTerms,
-              onChanged: (value) => setState(() => _agreedToTerms = value ?? false),
-              activeColor: AppColors.primary,
-            ),
-            Text('I agree to the Terms and Conditions', style: AppTextStyles.bodyMedium),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withOpacity(0.8),
           ],
         ),
-        const SizedBox(height: 16),
-
-        _buildPrimaryButton(
-          text: 'Next ›',
-          onPressed: () {
-            if (_formKey.currentState!.validate() && _agreedToTerms) {
-              setState(() => _currentStep = 1);
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIncomeSourceField(Map<String, String> source, int index) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_hasMultipleIncomes) ...[
-            Text('Income Source ${index + 1}', style: AppTextStyles.h3),
-            const SizedBox(height: 8),
-          ],
-          TextFormField(
-            initialValue: source['source'],
-            decoration: const InputDecoration(
-              labelText: 'Income Source',
-              prefixIcon: Icon(CupertinoIcons.briefcase),
-            ),
-            onChanged: (value) => setState(() => incomeSources[index]['source'] = value),
-            style: AppTextStyles.input,
-            validator: (value) => value!.isEmpty ? 'Enter income source' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            initialValue: source['amount'],
-            decoration: const InputDecoration(
-              labelText: 'Amount',
-              prefixIcon: Icon(CupertinoIcons.money_dollar),
-            ),
-            onChanged: (value) => setState(() => incomeSources[index]['amount'] = value),
-            keyboardType: TextInputType.number,
-            style: AppTextStyles.input,
-            validator: (value) => value!.isEmpty ? 'Enter an amount' : null,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStepTwo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Income Details', style: AppTextStyles.h2),
-        const SizedBox(height: 20),
-        
-        // Multiple incomes toggle
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.inputBorder),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Multiple incomes?', style: AppTextStyles.bodyLarge),
-              Switch(
-                value: _hasMultipleIncomes,
-                onChanged: (value) {
-                  setState(() {
-                    _hasMultipleIncomes = value;
-                    if (!value) {
-                      // Reset to single income source
-                      incomeSources = [{'source': '', 'amount': ''}];
-                    }
-                  });
-                },
-                activeColor: AppColors.primary,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onPressed,
+          child: Center(
+            child: Text(
+              text,
+              style: AppTextStyles.button.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Income sources
-        if (_hasMultipleIncomes) ...[
-          ...incomeSources.asMap().entries.map((entry) {
-            int index = entry.key;
-            Map<String, String> source = entry.value;
-            return _buildIncomeSourceField(source, index);
-          }).toList(),
-          if (incomeSources.length < 5) // Limit to 5 income sources
-            _buildOutlinedButton(
-              text: '+ Add Another Income Source',
-              onPressed: () => setState(() => incomeSources.add({'source': '', 'amount': ''})),
             ),
-        ] else
-          _buildIncomeSourceField(incomeSources[0], 0),
-
-        const SizedBox(height: 24),
-        _buildPrimaryButton(
-          text: 'Next ›',
-          onPressed: () {
-            if (_formKey.currentState?.validate() ?? false) {
-              setState(() => _currentStep = 2);
-            }
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildOutlinedButton(
-          text: 'Back',
-          onPressed: () => setState(() => _currentStep = 0),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStepThree() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Text('Almost Done!', style: AppTextStyles.h2),
-        const SizedBox(height: 20),
-        
-        // Phone Number
-        TextFormField(
-          controller: _phoneController,
-          decoration: const InputDecoration(
-            labelText: 'Phone Number',
-            prefixIcon: Icon(CupertinoIcons.phone),
           ),
-          keyboardType: TextInputType.phone,
-          style: AppTextStyles.input,
-          validator: (value) => (value?.isEmpty ?? true) ? 'Please enter your phone number' : null,
         ),
-        const SizedBox(height: 16),
-        
-        // Address
-        TextFormField(
-          controller: _addressController,
-          decoration: const InputDecoration(
-            labelText: 'Address',
-            prefixIcon: Icon(CupertinoIcons.location),
-          ),
-          style: AppTextStyles.input,
-          validator: (value) => (value?.isEmpty ?? true) ? 'Please enter your address' : null,
-        ),
-        const SizedBox(height: 16),
-        
-        // Bank of Choice
-        TextFormField(
-          controller: _bankController,
-          decoration: const InputDecoration(
-            labelText: 'Bank of Choice',
-            prefixIcon: Icon(CupertinoIcons.building_2_fill),
-          ),
-          style: AppTextStyles.input,
-          validator: (value) => (value?.isEmpty ?? true) ? 'Please enter your bank of choice' : null,
-        ),
-        const SizedBox(height: 24),
-        
-        _buildPrimaryButton(
-          text: 'Complete Registration',
-          onPressed: () {
-            if (_formKey.currentState?.validate() ?? false) {
-              setState(() => _currentStep = 3); // Move to completion step
-            }
-          },
-        ),
-        const SizedBox(height: 16),
-        _buildOutlinedButton(
-          text: 'Back',
-          onPressed: () => setState(() => _currentStep = 1),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCompletionStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Icon(
-          CupertinoIcons.check_mark_circled_solid,
-          size: 64,
-          color: AppColors.primary,
-        ),
-        const SizedBox(height: 24),
-        const Text('Registration Complete!', style: AppTextStyles.h1),
-        const SizedBox(height: 16),
-        Text(
-          'Welcome ${_nameController.text}!',
-          style: AppTextStyles.h2,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Your account has been successfully created. You can now start using the app.',
-          style: AppTextStyles.bodyLarge,
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 32),
-        _buildPrimaryButton(
-          text: 'Get Started',
-          onPressed: () {
-            // Navigate to main app screen
-            // Navigator.pushReplacement(...);
-          },
-        ),
-      ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background.withOpacity(0.98),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Form(
-              key: _formKey,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: _currentStep == 0
-                    ? _buildStepOne()
-                    : _currentStep == 1
-                        ? _buildStepTwo()
-                        : _currentStep == 2
-                            ? _buildStepThree()
-                            : _buildCompletionStep(),
-                            ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _currentStep == 0
+                  ? _buildStepOne()
+                  : _currentStep == 1
+                      ? _buildStepTwo()
+                      : _buildCompletionStep(),
             ),
           ),
         ),
@@ -453,16 +776,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    // Dispose of all controllers
     _nameController.dispose();
-    _typeController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
-    _bankController.dispose();
-    _singleIncomeSourceController.dispose();
-    _singleIncomeAmountController.dispose();
+    _incomeSourceController.dispose();
+    _incomeAmountController.dispose();
+    _incomeFrequencyController.dispose();
+    _incomeDescriptionController.dispose();
     super.dispose();
   }
 }
