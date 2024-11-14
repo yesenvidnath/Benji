@@ -99,7 +99,9 @@ class CustomBottomSheet extends StatelessWidget {
 }
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+
+  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _showModalContent(BuildContext context, String title, Widget content) {
     showModalBottomSheet(
@@ -246,7 +248,7 @@ class SettingsScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const CertificationManagementScreen(),
+                    builder: (context) => const CertificationUploadScreen(),
                   ),
                 );
               },
@@ -505,6 +507,11 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+
+  void _handleMenuPress(BuildContext context) {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -712,7 +719,7 @@ Widget _buildSecurityOption({
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: GlobalKey<ScaffoldState>(),
+      key: _scaffoldKey,
       backgroundColor: AppColors.background,
       drawer: HeaderNavigator.buildDrawer(context),
       body: SafeArea(
@@ -721,7 +728,7 @@ Widget _buildSecurityOption({
             HeaderNavigator(
               currentRoute: 'settings',
               userName: 'Settings',
-              onMenuPressed: () => Scaffold.of(context).openDrawer(),
+              onMenuPressed: () => _handleMenuPress(context),
               onSearchPressed: () {},
               onProfilePressed: () {},
             ),

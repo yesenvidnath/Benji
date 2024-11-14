@@ -37,6 +37,8 @@ dependencies:
   lottie: ^2.1.0
   image_picker: ^0.8.7+3
   shared_preferences: ^2.2.0
+  flutter_launcher_icons: "^0.14.1"
+  
     # The following adds the Cupertino Icons font to your application.
     # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.5
@@ -54,6 +56,14 @@ dev_dependencies:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/benji.png" # Replace this path with your icon's path
+  android_application_label: "Benji" # Sets the app name on Android
+  ios_application_label: "Benji" # Sets the app name on iOS
+
 
 # The following section is specific to Flutter packages.
 flutter:

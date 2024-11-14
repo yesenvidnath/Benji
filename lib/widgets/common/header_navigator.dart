@@ -77,7 +77,7 @@ class HeaderNavigator extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const SettingsScreen(),
+            builder: (context) => SettingsScreen(),
           ),
         );
         break;
