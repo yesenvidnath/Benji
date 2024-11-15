@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../widgets/common/footer_navigator.dart';
+import '../../../widgets/common/header_navigator.dart';
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({super.key});
-
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
 }
 
 class _NotificationScreenState extends State<NotificationScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   @override
   void initState() {
     super.initState();
@@ -25,47 +26,75 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
     super.dispose();
   }
 
+  void _handleMenuPress(BuildContext context) {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+      key: _scaffoldKey,
+      backgroundColor: AppColors.background.withOpacity(0.98),
+      drawer: HeaderNavigator.buildDrawer(context),
+      body: SafeArea(
+        child: Column(
+          children: [
+            HeaderNavigator(
+              currentRoute: 'notifications',
+              userName: 'Notifications',
+              onMenuPressed: () => _handleMenuPress(context),
+              onSearchPressed: () {},
+              onProfilePressed: () {},
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: TabBar(
+                  controller: _tabController,
+                  labelStyle: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                  unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
+                    fontSize: 15,
+                  ),
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  indicator: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.primary.withOpacity(0.1),
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  overlayColor: MaterialStateProperty.all(Colors.transparent), // Removes hover color
+                  tabs: const [
+                    Tab(text: 'All Notifications'),
+                    Tab(text: 'Unread'),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildNotificationList(false),
+                  _buildNotificationList(true),
+                ],
+              ),
+            ),
+          ],
         ),
-        title: const Text('Notification'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          TabBar(
-            controller: _tabController,
-            tabs: const [
-              Tab(text: 'All Notification'),
-              Tab(text: 'Unread'),
-            ],
-            labelStyle: AppTextStyles.bodyLarge,
-            unselectedLabelStyle: AppTextStyles.bodyLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            indicatorColor: AppColors.accent,
-            dividerColor: Colors.transparent,
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildNotificationList(false),
-                _buildNotificationList(true),
-              ],
-            ),
-          ),
-        ],
       ),
       bottomNavigationBar: const FooterNavigator(currentRoute: 'notifications'),
     );
@@ -81,11 +110,11 @@ class _NotificationScreenState extends State<NotificationScreen> with SingleTick
             name: "Dean Williamson",
             amount: 76.00,
             time: "10:42 AM",
-            isUnread: true,
+            isUnread: unreadOnly,
           ),
         );
       },
-      itemCount: 10, // Replace with actual notification count
+      itemCount: 10,
     );
   }
 }
@@ -103,51 +132,128 @@ class _NotificationItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            notification.isUnread
+                ? AppColors.primary.withOpacity(0.08)
+                : AppColors.surface.withOpacity(0.95),
+            notification.isUnread
+                ? AppColors.primaryLight.withOpacity(0.05)
+                : AppColors.surface.withOpacity(0.85),
+          ],
+          stops: const [0.1, 0.9],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: notification.isUnread
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.white.withOpacity(0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.white.withOpacity(0.9),
+            blurRadius: 20,
+            offset: const Offset(-5, -5),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Row(
         children: [
           _buildNotificationIcon(),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _buildNotificationText(),
-                  style: AppTextStyles.bodyLarge,
+                  style: AppTextStyles.profileSubtitle.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: notification.isUnread ? FontWeight.w600 : FontWeight.w400,
+                    fontSize: 15,
+                  ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  notification.time,
-                  style: AppTextStyles.bodyMedium,
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.textSecondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    notification.time,
+                    style: AppTextStyles.glassStatTitle.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
+          if (notification.isUnread)
+            Container(
+              margin: const EdgeInsets.only(left: 12),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 6,
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _buildNotificationIcon() {
+    final isReceived = notification.isMoneyReceived;
     return Container(
-      width: 48,
-      height: 48,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: notification.isMoneyReceived 
-            ? const Color(0xFFE9E5FF)
-            : const Color(0xFFFFEBEB),
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            isReceived ? AppColors.success.withOpacity(0.15) : AppColors.error.withOpacity(0.15),
+            isReceived ? AppColors.success.withOpacity(0.05) : AppColors.error.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: (isReceived ? AppColors.success : AppColors.error).withOpacity(0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isReceived ? AppColors.success : AppColors.error).withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Icon(
-        notification.isMoneyReceived 
-            ? Icons.arrow_downward
-            : Icons.arrow_upward,
-        color: notification.isMoneyReceived
-            ? const Color(0xFF7B61FF)
-            : const Color(0xFFFF5C5C),
+        isReceived ? CupertinoIcons.arrow_down : CupertinoIcons.arrow_up,
+        color: isReceived ? AppColors.success : AppColors.error,
+        size: 24,
       ),
     );
   }

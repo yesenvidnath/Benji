@@ -1,12 +1,16 @@
-// header_navigator.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../screens/common/expenses_screen.dart';
+import '../../../screens/common/login_screen.dart';
+import '../../../screens/common/settings_screen.dart';
 import '../../../screens/common/notifications_screen.dart';
 import '../../../screens/common/analytics_screen.dart';
 import '../../../screens/user/professional_list_screen.dart';
 import '../../../screens/user/user_meetings_screen.dart';
+import 'package:provider/provider.dart';
+import '../../../controllers/auth_controller.dart';
 
 class HeaderNavigator extends StatelessWidget {
   final String currentRoute;
@@ -26,216 +30,351 @@ class HeaderNavigator extends StatelessWidget {
     required this.onProfilePressed,
   });
 
-  static void _handleNavigation(BuildContext context, String route) {
-    Navigator.pop(context); // Close drawer first
+  static Future<void> _handleLogout(BuildContext context) async {
+    // Get the navigator and auth controller before any UI updates
+    final navigator = Navigator.of(context);
+    final authController = Provider.of<AuthController>(context, listen: false);
 
-    // Handle navigation based on route
-    switch (route) {
-      case 'expenses':
-        Navigator.push(
-          context,
+    try {
+      // Perform logout
+      await authController.logout();
+      
+      // Navigate to login screen and remove all previous routes
+      if (navigator.mounted) {
+        await navigator.pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => const AddExpensesScreen(),
+            builder: (_) => const LoginScreen(),
           ),
+          (route) => false,
         );
-        break;
-      case 'notifications':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const NotificationScreen(),
-          ),
-        );
-        break;
-      case 'meetings':
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const UserMeetingsScreen(),
-          ),
-        );
-        break;
-      case 'dashboard':
-      case 'history':
-      case 'statistics':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AnalyticsScreen(),
-          ),
-        );
-
-      case 'Profeshanals':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProfessionalListScreen(),
-          ),
-        );
-
-      case 'settings':
-      case 'help':
-        // For screens that aren't implemented yet, show a snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$route screen is under development'),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        break;
-      case 'logout':
-        // Show logout confirmation dialog
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Confirm Logout'),
-              content: const Text('Are you sure you want to logout?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // Add your logout logic here
-                    // For now, just show a snackbar
-                    Navigator.pop(context); // Close dialog
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Logout functionality will be implemented soon'),
-                        duration: Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Logout',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-        break;
+      }
+    } catch (error) {
+      if (!navigator.mounted) return;
+      
+      // Show error in a way that doesn't depend on scaffold messenger
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Logout Error'),
+            content: Text('Failed to logout: $error'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 
-  // Static method to build drawer
-  static Drawer buildDrawer(BuildContext context) {
+  static void _handleNavigation(BuildContext context, String route) {
+    if (route == 'logout') {
+      // Show logout confirmation dialog
+      showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Confirm Logout',
+              style: AppTextStyles.h3,
+            ),
+            content: const Text(
+              'Are you sure you want to logout?',
+              style: AppTextStyles.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(
+                  'Cancel',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  // Close both the dialog and the drawer
+                  Navigator.pop(dialogContext); // Close dialog
+                  Navigator.pop(context); // Close drawer
+                  // Handle logout with a slight delay to ensure cleanup
+                  Future.microtask(() => _handleLogout(context));
+                },
+                child: Text(
+                  'Logout',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    // Close drawer first
+    Navigator.pop(context);
+
+    // Handle other navigation cases with a slight delay
+    Future.microtask(() {
+      if (!context.mounted) return;
+      
+      switch (route) {
+        case 'expenses':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddExpensesScreen(),
+            ),
+          );
+          break;
+        case 'notifications':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NotificationScreen(),
+            ),
+          );
+          break;
+        case 'meetings':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const UserMeetingsScreen(),
+            ),
+          );
+          break;
+        case 'dashboard':
+        case 'history':
+        case 'statistics':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AnalyticsScreen(),
+            ),
+          );
+          break;
+        case 'Profeshanals':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfessionalListScreen(),
+            ),
+          );
+          break;
+        case 'settings':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SettingsScreen(),
+            ),
+          );
+          break;
+        case 'help':
+          if (!context.mounted) return;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Under Development'),
+                content: const Text('This feature is coming soon!'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
+          );
+          break;
+      }
+    });
+  }
+
+  static Widget buildDrawer(BuildContext context) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppColors.surface,
-                  child: Icon(
-                    Icons.person,
-                    color: AppColors.primary,
-                    size: 30,
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Header section
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppColors.inputBorder.withOpacity(0.2),
+                    width: 1,
                   ),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  'Menu',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: const CircleAvatar(
+                      radius: 32,
+                      backgroundColor: AppColors.surface,
+                      child: Icon(
+                        CupertinoIcons.person,
+                        color: AppColors.primary,
+                        size: 32,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Text(
+                    'Menu',
+                    style: AppTextStyles.h3.copyWith(
+                      color: AppColors.textPrimary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          _buildDrawerItem(
-            icon: Icons.dashboard,
-            title: 'Dashboard',
-            onTap: () => _handleNavigation(context, 'dashboard'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.account_balance_wallet,
-            title: 'Expenses',
-            onTap: () => _handleNavigation(context, 'expenses'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.notifications,
-            title: 'Notifications',
-            onTap: () => _handleNavigation(context, 'notifications'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.calendar_view_day_rounded,
-            title: 'meetings',
-            onTap: () => _handleNavigation(context, 'meetings'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.history,
-            title: 'History',
-            onTap: () => _handleNavigation(context, 'history'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.show_chart,
-            title: 'Statistics',
-            onTap: () => _handleNavigation(context, 'statistics'),
-          ),
-          const Divider(),
-          _buildDrawerItem(
-            icon: Icons.settings,
-            title: 'Profeshanals',
-            onTap: () => _handleNavigation(context, 'Profeshanals'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.settings,
-            title: 'Settings',
-            onTap: () => _handleNavigation(context, 'settings'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.help,
-            title: 'Help & Support',
-            onTap: () => _handleNavigation(context, 'help'),
-          ),
-          _buildDrawerItem(
-            icon: Icons.logout,
-            title: 'Logout',
-            onTap: () => _handleNavigation(context, 'logout'),
-          ),
-        ],
+            
+            // Menu items in scrollable list
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  _buildDrawerSection(
+                    items: [
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.chart_bar,
+                        title: 'Dashboard',
+                        onTap: () => _handleNavigation(context, 'dashboard'),
+                      ),
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.money_dollar_circle,
+                        title: 'Expenses',
+                        onTap: () => _handleNavigation(context, 'expenses'),
+                      ),
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.bell,
+                        title: 'Notifications',
+                        onTap: () => _handleNavigation(context, 'notifications'),
+                      ),
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.calendar,
+                        title: 'Meetings',
+                        onTap: () => _handleNavigation(context, 'meetings'),
+                      ),
+                    ],
+                  ),
+                  
+                  _buildDrawerSection(
+                    items: [
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.graph_circle,
+                        title: 'Statistics',
+                        onTap: () => _handleNavigation(context, 'statistics'),
+                      ),
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.person_2,
+                        title: 'Professionals',
+                        onTap: () => _handleNavigation(context, 'Profeshanals'),
+                      ),
+                    ],
+                  ),
+                  
+                  _buildDrawerSection(
+                    items: [
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.settings,
+                        title: 'Settings',
+                        onTap: () => _handleNavigation(context, 'settings'),
+                      ),
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.question_circle,
+                        title: 'Help & Support',
+                        onTap: () => _handleNavigation(context, 'help'),
+                      ),
+                      _buildDrawerItem(
+                        icon: CupertinoIcons.square_arrow_left,
+                        title: 'Logout',
+                        onTap: () => _handleNavigation(context, 'logout'),
+                        isDestructive: true,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // Rest of the class remains the same...
+  static Widget _buildDrawerSection({required List<Widget> items}) {
+    return Column(
+      children: [
+        ...items,
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Divider(height: 32),
+        ),
+      ],
+    );
+  }
+
   static Widget _buildDrawerItem({
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: AppColors.primaryLight),
-      title: Text(
-        title,
-        style: AppTextStyles.bodyMedium.copyWith(
-          color: AppColors.primaryLight,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Icon(
+          icon,
+          color: isDestructive ? AppColors.error : AppColors.primary.withOpacity(0.8),
+          size: 22,
         ),
+        title: Text(
+          title,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: isDestructive ? AppColors.error : AppColors.textPrimary,
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+          ),
+        ),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        hoverColor: AppColors.primary.withOpacity(0.05),
+        tileColor: Colors.transparent,
+        selectedTileColor: AppColors.primary.withOpacity(0.08),
+        minLeadingWidth: 24,
+        horizontalTitleGap: 12,
       ),
-      onTap: onTap,
     );
   }
 
@@ -258,84 +397,134 @@ class HeaderNavigator extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Build method remains the same...
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        shape: BoxShape.circle,
+        color: AppColors.primary.withOpacity(0.08),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: AppColors.primary.withOpacity(0.05),
+            blurRadius: 4,
             offset: const Offset(0, 2),
+            spreadRadius: 0,
           ),
         ],
       ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            child: Icon(
+              icon,
+              color: AppColors.primary.withOpacity(0.9),
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface.withOpacity(0.98),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      margin: const EdgeInsets.only(bottom: 2),
       child: SafeArea(
         bottom: false,
         child: Container(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Left side - Menu and Title
-                  Expanded(
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.menu),
-                          onPressed: onMenuPressed,
-                          color: AppColors.textPrimary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _getScreenTitle(),
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+              Expanded(
+                child: Row(
+                  children: [
+                    _buildIconButton(
+                      icon: CupertinoIcons.bars,
+                      onPressed: onMenuPressed,
                     ),
-                  ),
-                  // Right side - Search and Profile
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: onSearchPressed,
+                    const SizedBox(width: 12),
+                    Text(
+                      _getScreenTitle(),
+                      style: AppTextStyles.h3.copyWith(
                         color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: onProfilePressed,
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundColor: AppColors.accent.withOpacity(0.1),
-                              backgroundImage: userAvatar != null
-                                  ? NetworkImage(userAvatar!)
-                                  : null,
-                              child: userAvatar == null
-                                  ? Text(
-                                      userName.isNotEmpty
-                                          ? userName[0].toUpperCase()
-                                          : '?',
-                                      style: AppTextStyles.bodyMedium.copyWith(
-                                        color: AppColors.accent,
-                                      ),
-                                    )
-                                  : null,
-                            ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  _buildIconButton(
+                    icon: CupertinoIcons.search,
+                    onPressed: onSearchPressed,
+                  ),
+                  const SizedBox(width: 12),
+                  GestureDetector(
+                    onTap: onProfilePressed,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.primary.withOpacity(0.9),
+                            AppColors.primaryLight,
                           ],
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                            spreadRadius: 0,
+                          ),
+                        ],
                       ),
-                    ],
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.white,
+                        backgroundImage: userAvatar != null
+                            ? NetworkImage(userAvatar!)
+                            : null,
+                        child: userAvatar == null
+                            ? Text(
+                                userName.isNotEmpty
+                                    ? userName[0].toUpperCase()
+                                    : '?',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
                   ),
                 ],
               ),
