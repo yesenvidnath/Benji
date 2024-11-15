@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import 'profile_screen.dart';
 import 'register_screen.dart';
+
+//importing the auth controller 
+import '../../controllers/auth_controller.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -132,13 +137,55 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProfileScreen(),
-                          ),
+                      onTap: () async{
+                        // Show loading overlay
+                        showDialog(
+                          context: context, 
+                          barrierDismissible: false,
+                          builder: (BuildContext context){
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
                         );
+
+                        try{
+                          // Calling the login function 
+                          await Provider.of<AuthController>(context, listen: false).login(
+                            _emailController.text,
+                            _passwordController.text,
+                          );
+
+                          //Close loading overlay
+                          Navigator.of(context).pop();
+
+                          //Check if login was successful by accesingthe isLoggin State
+                          if (Provider.of <AuthController>(context, listen: false).isLoggedIn){
+                            //display snackbar 
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Login was Successful!")),
+                            );
+
+                            //Redirect to profile 
+                            Navigator.pushReplacement(
+                              context, 
+                              MaterialPageRoute(builder: (context) => ProfileScreen()),
+                            );
+                          } else{
+                            // Show error SnackBar if login fails
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Login failed. Please check your credentials.")),
+                            );
+                          }
+                        }catch(e){
+                          // Close loading overlay in case of error
+                          Navigator.of(context).pop();
+
+                          // Show error SnackBar if an exception is thrown
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("An error occurred: $e")),
+                          );
+                        }
                       },
                       child: Center(
                         child: Text(

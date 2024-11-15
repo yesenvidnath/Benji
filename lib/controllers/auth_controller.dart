@@ -1,7 +1,51 @@
 // lib/controllers/auth_controller.dart
 import 'package:flutter/material.dart';
+import '../data/repositories/auth_repository.dart';
 
-class AuthController extends ChangeNotifier {
+class AuthController with ChangeNotifier{
+  final AuthRepository _authRepository = AuthRepository();
+  bool isLoggedIn = false;
+
+  AuthController(){
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async{
+  String? token = await _authRepository.getToken();
+  isLoggedIn = token != null;
+  notifyListeners();
+  }
+
+  // Managing loggin state connecting with the auth reposotory
+  Future<void> login(String email, String password) async{
+    try{
+      
+      await _authRepository.login(email, password);
+      //Setting login state and other user info if nessery 
+      isLoggedIn = true;
+      notifyListeners();
+    } catch (e){
+      print("Login error : $e");
+      isLoggedIn = false;
+      notifyListeners();
+    }
+
+  }
+
+  // Managing loggin-out state connecting with the auth reposotory
+  Future<void> logout() async{
+    await _authRepository.logout();
+    isLoggedIn = false;
+    notifyListeners();
+  }
+  
+}
+
+
+
+
+
+class AuthControllerOld extends ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _token;

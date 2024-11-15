@@ -100,7 +100,6 @@ class CustomBottomSheet extends StatelessWidget {
 
 class SettingsScreen extends StatelessWidget {
 
-  final _formKey = GlobalKey<FormState>();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _showModalContent(BuildContext context, String title, Widget content) {

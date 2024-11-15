@@ -3,11 +3,14 @@ import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../screens/common/expenses_screen.dart';
+import '../../../screens/common/login_screen.dart';
 import '../../../screens/common/settings_screen.dart';
 import '../../../screens/common/notifications_screen.dart';
 import '../../../screens/common/analytics_screen.dart';
 import '../../../screens/user/professional_list_screen.dart';
 import '../../../screens/user/user_meetings_screen.dart';
+import 'package:provider/provider.dart';
+import '../../../controllers/auth_controller.dart';
 
 class HeaderNavigator extends StatelessWidget {
   final String currentRoute;
@@ -27,136 +30,182 @@ class HeaderNavigator extends StatelessWidget {
     required this.onProfilePressed,
   });
 
-  static void _handleNavigation(BuildContext context, String route) {
-    Navigator.pop(context); // Close drawer first
+  static Future<void> _handleLogout(BuildContext context) async {
+    // Get the navigator and auth controller before any UI updates
+    final navigator = Navigator.of(context);
+    final authController = Provider.of<AuthController>(context, listen: false);
 
-    switch (route) {
-      case 'expenses':
-        Navigator.push(
-          context,
+    try {
+      // Perform logout
+      await authController.logout();
+      
+      // Navigate to login screen and remove all previous routes
+      if (navigator.mounted) {
+        await navigator.pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (context) => const AddExpensesScreen(),
+            builder: (_) => const LoginScreen(),
           ),
+          (route) => false,
         );
-        break;
-      case 'notifications':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NotificationScreen(),
-          ),
-        );
-        break;
-      case 'meetings':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const UserMeetingsScreen(),
-          ),
-        );
-        break;
-      case 'dashboard':
-      case 'history':
-      case 'statistics':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const AnalyticsScreen(),
-          ),
-        );
-        break;
-      case 'Profeshanals':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const ProfessionalListScreen(),
-          ),
-        );
-        break;
-      case 'settings':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SettingsScreen(),
-          ),
-        );
-        break;
-
-      case 'help':
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$route screen is under development'),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: AppColors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        break;
-      case 'logout':
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+      }
+    } catch (error) {
+      if (!navigator.mounted) return;
+      
+      // Show error in a way that doesn't depend on scaffold messenger
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Logout Error'),
+            content: Text('Failed to logout: $error'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
               ),
-              title: const Text(
-                'Confirm Logout',
-                style: AppTextStyles.h3,
-              ),
-              content: const Text(
-                'Are you sure you want to logout?',
-                style: AppTextStyles.bodyMedium,
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'Cancel',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text('Logout functionality will be implemented soon'),
-                        duration: const Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Logout',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-        break;
+            ],
+          );
+        },
+      );
     }
   }
 
-  static Drawer buildDrawer(BuildContext context) {
+  static void _handleNavigation(BuildContext context, String route) {
+    if (route == 'logout') {
+      // Show logout confirmation dialog
+      showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Confirm Logout',
+              style: AppTextStyles.h3,
+            ),
+            content: const Text(
+              'Are you sure you want to logout?',
+              style: AppTextStyles.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(
+                  'Cancel',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  // Close both the dialog and the drawer
+                  Navigator.pop(dialogContext); // Close dialog
+                  Navigator.pop(context); // Close drawer
+                  // Handle logout with a slight delay to ensure cleanup
+                  Future.microtask(() => _handleLogout(context));
+                },
+                child: Text(
+                  'Logout',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    // Close drawer first
+    Navigator.pop(context);
+
+    // Handle other navigation cases with a slight delay
+    Future.microtask(() {
+      if (!context.mounted) return;
+      
+      switch (route) {
+        case 'expenses':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddExpensesScreen(),
+            ),
+          );
+          break;
+        case 'notifications':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NotificationScreen(),
+            ),
+          );
+          break;
+        case 'meetings':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const UserMeetingsScreen(),
+            ),
+          );
+          break;
+        case 'dashboard':
+        case 'history':
+        case 'statistics':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AnalyticsScreen(),
+            ),
+          );
+          break;
+        case 'Profeshanals':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfessionalListScreen(),
+            ),
+          );
+          break;
+        case 'settings':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SettingsScreen(),
+            ),
+          );
+          break;
+        case 'help':
+          if (!context.mounted) return;
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Under Development'),
+                content: const Text('This feature is coming soon!'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              );
+            },
+          );
+          break;
+      }
+    });
+  }
+
+  static Widget buildDrawer(BuildContext context) {
     return Drawer(
       backgroundColor: AppColors.surface,
-      elevation: 0, // More modern flat design
+      elevation: 0,
       child: SafeArea(
         child: Column(
           children: [
@@ -239,7 +288,6 @@ class HeaderNavigator extends StatelessWidget {
                   
                   _buildDrawerSection(
                     items: [
-
                       _buildDrawerItem(
                         icon: CupertinoIcons.graph_circle,
                         title: 'Statistics',
@@ -248,7 +296,7 @@ class HeaderNavigator extends StatelessWidget {
                       _buildDrawerItem(
                         icon: CupertinoIcons.person_2,
                         title: 'Professionals',
-                        onTap: () => _handleNavigation(context, 'Profeshanals'), // Update to match switch case
+                        onTap: () => _handleNavigation(context, 'Profeshanals'),
                       ),
                     ],
                   ),
