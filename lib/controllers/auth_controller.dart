@@ -1,46 +1,64 @@
-// lib/controllers/auth_controller.dart
 import 'package:flutter/material.dart';
 import '../data/repositories/auth_repository.dart';
 
-class AuthController with ChangeNotifier{
+class AuthController with ChangeNotifier {
   final AuthRepository _authRepository = AuthRepository();
   bool isLoggedIn = false;
+  bool isLoading = false;
 
-  AuthController(){
+  AuthController() {
     _checkLoginStatus();
   }
 
-  Future<void> _checkLoginStatus() async{
-  String? token = await _authRepository.getToken();
-  isLoggedIn = token != null;
-  notifyListeners();
+  // Check login status by checking for the token in SharedPreferences
+  Future<void> _checkLoginStatus() async {
+    String? token = await _authRepository.getToken();
+    isLoggedIn = token != null;
+    notifyListeners();
   }
 
-  // Managing loggin state connecting with the auth reposotory
-  Future<void> login(String email, String password) async{
-    try{
-      
-      await _authRepository.login(email, password);
-      //Setting login state and other user info if nessery 
-      isLoggedIn = true;
+  // Login method to manage user login state
+  Future<void> login(String email, String password) async {
+    try {
+      isLoading = true;
       notifyListeners();
-    } catch (e){
-      print("Login error : $e");
+      await _authRepository.login(email, password);
+      isLoggedIn = true;
+      isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      //print("Login error: $e");
       isLoggedIn = false;
+      isLoading = false;
       notifyListeners();
     }
-
   }
 
-  // Managing loggin-out state connecting with the auth reposotory
-  Future<void> logout() async{
+  // Register method to manage user registration state
+  Future<void> register(Map<String, dynamic> registrationData) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      await _authRepository.register(registrationData);
+      isLoggedIn = true;
+      isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      //print("Registration error: $e");
+      isLoggedIn = false;
+      isLoading = false;
+      notifyListeners();
+      rethrow; // Rethrow for UI handling
+    }
+  }
+
+  // Logout method to handle user logout
+  Future<void> logout() async {
     await _authRepository.logout();
     isLoggedIn = false;
     notifyListeners();
   }
-  
 }
-
 
 
 
@@ -66,7 +84,6 @@ class AuthControllerOld extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO: Replace with actual API call
       await Future.delayed(const Duration(seconds: 1)); // Simulate API call
 
       // Simulate successful login
@@ -95,7 +112,6 @@ class AuthControllerOld extends ChangeNotifier {
   // Logout method
   Future<void> logout() async {
     try {
-      // TODO: Replace with actual API call
       await Future.delayed(const Duration(milliseconds: 500)); // Simulate API call
       
       _isAuthenticated = false;
@@ -112,7 +128,7 @@ class AuthControllerOld extends ChangeNotifier {
   // Check auth status method
   Future<bool> checkAuthStatus() async {
     try {
-      // TODO: Replace with actual token validation
+      
       // This could check local storage for tokens and validate them
       await Future.delayed(const Duration(milliseconds: 500));
       
@@ -132,7 +148,7 @@ class AuthControllerOld extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO: Replace with actual API call
+      
       await Future.delayed(const Duration(seconds: 1));
       
       _isLoading = false;
