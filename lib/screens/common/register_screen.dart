@@ -4,15 +4,20 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 
+//importing the auth controller 
+import '../../controllers/auth_controller.dart';
+import 'package:provider/provider.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
+
 class IncomeSource {
   final String source;
-  final double amount;
+  final dynamic amount; // Change to dynamic if unsure about type
   final String frequency;
   final String description;
 
@@ -22,6 +27,15 @@ class IncomeSource {
     required this.frequency,
     required this.description,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      "source_name": source,
+      "amount": amount is num ? amount.toString() : amount, // Convert num to string
+      "frequency": frequency,
+      "description": description,
+    };
+  }
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
@@ -31,10 +45,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _hasMultipleIncomes = false;
   DateTime? _selectedBirthday;
   bool _passwordVisible = false;
-  String selectedFrequency = 'Monthly';
+  String selectedFrequency = 'monthly';
 
   // Form Controllers
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -43,6 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _incomeAmountController = TextEditingController();
   final _incomeFrequencyController = TextEditingController();
   final _incomeDescriptionController = TextEditingController();
+  final _bankController = TextEditingController();
 
   final List<IncomeSource> incomeSources = [];
 
@@ -205,13 +221,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             itemExtent: 32.0,
             onSelectedItemChanged: (int index) {
               setState(() {
-                selectedFrequency = index == 0 ? 'Monthly' : 'Yearly';
+              selectedFrequency = index == 0 ? 'monthly'
+                  : index == 1 ? 'yearly'
+                      : index == 2 ? 'daily' : 'weekly';
                 _incomeFrequencyController.text = selectedFrequency;
               });
             },
             children: const [
               Text('Monthly'),
               Text('Yearly'),
+              Text('Daily'),
+              Text('weekly'),
             ],
           ),
         ),
@@ -322,7 +342,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (_incomeSourceController.text.isEmpty ||
-        _incomeAmountController.text.isEmpty) {
+        _incomeAmountController.text.isEmpty || _bankController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -379,10 +399,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 40),
         _buildInputField(
-          label: 'Full Name',
-          hint: 'John Doe',
+          label: 'First Name',
+          hint: 'John',
           icon: CupertinoIcons.person,
-          controller: _nameController,
+          controller: _firstNameController,
+          validator: (value) => value?.isEmpty ?? true ? 'Please enter your name' : null,
+        ),
+        _buildInputField(
+          label: 'Last Name',
+          hint: 'Doe',
+          icon: CupertinoIcons.person,
+          controller: _lastNameController,
           validator: (value) => value?.isEmpty ?? true ? 'Please enter your name' : null,
         ),
         _buildInputField(
@@ -407,6 +434,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _phoneController,
           keyboardType: TextInputType.phone,
           validator: (value) => value?.isEmpty ?? true ? 'Please enter your phone number' : null,
+        ),
+        _buildInputField(
+          label: 'Home Address',
+          hint: '1/2 ABC Town, Sample City',
+          icon: CupertinoIcons.house,
+          controller: _addressController,
+          validator: (value) => value?.isEmpty ?? true ? 'Please enter your Adress' : null,
         ),
         _buildInputField(
           label: 'Email Address',
@@ -497,6 +531,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         const SizedBox(height: 40),
+
+        // Bank input
+        _buildCustomInputField(
+          label: 'Bank of Choice',
+          child: TextField(
+            controller: _bankController,
+            decoration: InputDecoration(
+              hintText: 'e.g., Sampath, BOC',
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              prefixIcon: Icon(
+                CupertinoIcons.money_dollar_circle,
+                color: AppColors.primary.withOpacity(0.7),
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 30),
 
         // Income source input
         _buildCustomInputField(
@@ -626,7 +680,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              child: Text(
+              child: const Text(
                 '+ Add to List',
                 style: AppTextStyles.button,
               ),
@@ -650,24 +704,59 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ],
 
         const SizedBox(height: 32),
+        
         _buildPrimaryButton(
           text: 'Complete Registration',
-          onPressed: () {
-            if (incomeSources.isEmpty) {
+          onPressed: () async {
+            if (_formKey.currentState?.validate() ?? false) {
+              // Create the income sources from the user input
+              List<Map<String, dynamic>> incomeSourcesList = [];
+              
+              for (var incomeSource in incomeSources) {
+                incomeSourcesList.add(incomeSource.toJson());
+              }
+
+              // Prepare registration data
+              Map<String, dynamic> registrationData = {
+                "type": "Customer", // Assuming this is fixed
+                "first_name": _firstNameController.text,
+                "last_name": _lastNameController.text,
+                "address": _addressController.text,
+                "DOB": _selectedBirthday?.toIso8601String() ?? '', // Convert to ISO date format
+                "phone_number": _phoneController.text,
+                "email": _emailController.text,
+                "password": _passwordController.text,
+                "password_confirmation": _passwordController.text,
+                "profile_image": "https://example.com/image.jpg", // Assuming fixed image URL for now
+                "bank_choice": _bankController.text,
+                "incomeSources": incomeSourcesList,
+              };
+
+            try {
+              // Call the register method from the AuthController
+              await Provider.of<AuthController>(context, listen: false).register(registrationData);
+
+              // Handle success (e.g., navigate to another screen or show success message)
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Please add at least one income source',
-                    style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
-                  ),
-                  backgroundColor: AppColors.error,
-                ),
+                SnackBar(content: Text('Registration successful!'))
               );
-              return;
+
+              // Navigate to completion screen or next step
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => _buildCompletionStep()), 
+              );
+            } catch (e) {
+              // Handle failure if registration fails
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Registration failed: ${e.toString()}'))
+              );
             }
-            setState(() => _currentStep = 2);
+
+            }
           },
         ),
+
       ],
     );
   }
@@ -712,6 +801,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
     );
   }
+
 
   Widget _buildPrimaryButton({required String text, required VoidCallback onPressed}) {
     return Container(
@@ -776,7 +866,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _bankController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _phoneController.dispose();
