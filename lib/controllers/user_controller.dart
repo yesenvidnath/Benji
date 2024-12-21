@@ -16,6 +16,11 @@ class UserController with ChangeNotifier {
   String _userType = "";
   String _address = "";
 
+  // Insights data
+  List<Map<String, dynamic>> _categoryExpenses = [];
+  List<Map<String, dynamic>> _amountsAndDates = [];
+  Map<String, double> _spendingsAndSavings = {};
+
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -26,6 +31,10 @@ class UserController with ChangeNotifier {
   String get userType => _userType;
   String get address => _address;
   bool get isInitialized => _isInitialized;
+
+  List<Map<String, dynamic>> get categoryExpenses => _categoryExpenses;
+  List<Map<String, dynamic>> get amountsAndDates => _amountsAndDates;
+  Map<String, double> get spendingsAndSavings => _spendingsAndSavings;
 
   Future<void> fetchUserProfile() async {
     if (_isLoading) return; // Prevent multiple simultaneous fetches
@@ -61,4 +70,38 @@ class UserController with ChangeNotifier {
       notifyListeners();
     }
   }
+
+
+  Future<void> fetchSystemGeneratedInsights() async {
+    if (_isLoading) return; // Prevent multiple simultaneous fetches
+
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null) {
+        throw Exception("Authentication token is missing.");
+      }
+
+      final insightsData = await _userRepository.fetchSystemGeneratedInsights(token);
+
+      // Update insights fields
+      _categoryExpenses = insightsData['categoryExpenses'];
+      _amountsAndDates = insightsData['amountsAndDates'];
+      _spendingsAndSavings = insightsData['spendingsAndSavings'];
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = "Failed to load insights: $e";
+      notifyListeners();
+    }
+  }
+
+
 }

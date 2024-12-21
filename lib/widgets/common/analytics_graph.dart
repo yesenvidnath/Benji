@@ -2,15 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/theme/colors.dart';
+import '../../controllers/user_controller.dart';
+import 'package:provider/provider.dart';
 
 class AnalyticsGraph extends StatelessWidget {
   const AnalyticsGraph({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final userController = Provider.of<UserController>(context);
+
+    // Aggregate amounts by day
+    final aggregatedDayData = <int, double>{};
+    for (var entry in userController.amountsAndDates) {
+      final date = entry["spendingDate"] as DateTime?;
+      final amount = double.tryParse(entry["amount"]?.toString() ?? "0") ?? 0;
+
+      if (date != null && amount > 0) {
+        final day = date.day;
+        aggregatedDayData[day] = (aggregatedDayData[day] ?? 0) + amount;
+      }
+    }
+
+    // Generate spots for FlSpot
+    final spots = aggregatedDayData.entries
+        .map((e) => FlSpot(e.key.toDouble(), e.value))
+        .toList();
+
+    // Calculate max Y value for the graph
+    final maxYValue = spots.isEmpty
+        ? 100.0 // Default max if no data
+        : spots.map((spot) => spot.y).reduce((a, b) => a > b ? a : b).ceilToDouble();
+
+    // Ensure the Y-axis has 5 intervals
+    final interval = maxYValue / 4;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
       padding: const EdgeInsets.all(20.0),
+      height: 400, // Fixed height
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -48,11 +78,10 @@ class AnalyticsGraph extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Weekly Spending Analysis',
+                'Spending Analysis',
                 style: AppTextStyles.profileTitle.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w700,
-                 
                 ),
               ),
               Container(
@@ -97,14 +126,12 @@ class AnalyticsGraph extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 280,
+          Expanded(
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: 20,
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: AppColors.primary.withOpacity(0.05),
@@ -118,19 +145,17 @@ class AnalyticsGraph extends StatelessWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
-                      interval: 1,
+                      interval: 2, // Show every second day
                       getTitlesWidget: (value, meta) {
-                        const titles = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                        if (value.toInt() < 0 || value.toInt() >= titles.length) {
-                          return const Text('');
-                        }
+                        if (value % 2 != 0) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            titles[value.toInt()],
+                            value.toInt().toString(),
                             style: AppTextStyles.bodySmall.copyWith(
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
+                              fontSize: 10,
                             ),
                           ),
                         );
@@ -140,14 +165,15 @@ class AnalyticsGraph extends StatelessWidget {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      interval: 20,
                       reservedSize: 45,
+                      interval: interval, // Use calculated interval
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          '\$${value.toInt()}',
+                          '\Rs${value.toInt()}',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500,
+                            fontSize: 10,
                           ),
                         );
                       },
@@ -157,32 +183,24 @@ class AnalyticsGraph extends StatelessWidget {
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 6,
+                minX: 1,
+                maxX: 31,
                 minY: 0,
-                maxY: 100,
+                maxY: maxYValue,
                 lineBarsData: [
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 45),
-                      FlSpot(1, 60),
-                      FlSpot(2, 35),
-                      FlSpot(3, 70),
-                      FlSpot(4, 30),
-                      FlSpot(5, 80),
-                      FlSpot(6, 50),
-                    ],
+                    spots: spots,
                     isCurved: true,
                     color: AppColors.primary,
-                    barWidth: 3,
+                    barWidth: 2,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) {
                         return FlDotCirclePainter(
-                          radius: 6,
+                          radius: 4,
                           color: Colors.white,
-                          strokeWidth: 3,
+                          strokeWidth: 2,
                           strokeColor: AppColors.primary,
                         );
                       },
@@ -199,40 +217,8 @@ class AnalyticsGraph extends StatelessWidget {
                         ],
                       ),
                     ),
-                    shadow: const Shadow(
-                      color: Colors.black12,
-                      blurRadius: 8,
-                      offset: Offset(0, 4),
-                    ),
                   ),
                 ],
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    fitInsideHorizontally: true,
-                    fitInsideVertically: true,
-                    tooltipBorder: BorderSide(
-                      color: AppColors.primary,
-                      width: 1,
-                    ),
-                    tooltipRoundedRadius: 12,
-                    tooltipPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    tooltipMargin: 8,
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((LineBarSpot spot) {
-                        return LineTooltipItem(
-                          '\$${spot.y.toStringAsFixed(2)}',
-                          const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        );
-                      }).toList();
-                    },
-                  ),
-                ),
               ),
             ),
           ),

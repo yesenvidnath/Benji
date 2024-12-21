@@ -1,7 +1,7 @@
 class ApiEndpoints{
 
   static const String baseUrl = "http://127.0.0.1:8000/api/user-management-service";
-  static const String baseUrlCustomer = "http://127.0.0.1:8000/api/customer/";
+  static const String baseUrlCustomer = "http://127.0.0.1:8000/api/customer";
 
   // Authentication & User Management
   static const String registerUser = "$baseUrl/auth/register";
@@ -40,6 +40,6 @@ class ApiEndpoints{
   // 01. Bot analysis
   static const String getBotgeneratedInstings = "$baseUrlCustomer/consolidated-data";
   // 02. Systamatic analysis
-  static const String getSystemgeneratedInstings = "$baseUrlCustomer/current-month-data";
+  static const String getSystemGeneratedInstings = "$baseUrlCustomer/current-month-data";
 
 }

@@ -31,6 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userController = Provider.of<UserController>(context, listen: false);
     if (!userController.isInitialized) {
       await userController.fetchUserProfile();
+      await userController.fetchSystemGeneratedInsights();
     }
   }
 
@@ -40,6 +41,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userController = Provider.of<UserController>(context);
+
     return Consumer<UserController>(
       builder: (context, userController, child) {
         if (userController.isLoading) {
@@ -70,13 +73,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
 
-        final expenses = [
-          ExpenseItem(title: 'Grocery', percentage: '20%', isIncrease: true),
-          ExpenseItem(title: 'Internet', percentage: '5%', isIncrease: true),
-          ExpenseItem(title: 'Entertainment', percentage: '25%', isIncrease: false),
-          ExpenseItem(title: 'Utilities', percentage: '15%', isIncrease: true),
-          ExpenseItem(title: 'Transportation', percentage: '10%', isIncrease: false),
-        ];
+        final expenses = userController.categoryExpenses.map((expense) {
+          final totalAmount = double.tryParse(expense["totalAmount"].toString()) ?? 0;
+          return ExpenseItem(
+            title: expense["categoryName"],
+            percentage: "Rs.${expense["totalAmount"]}",
+            isIncrease: totalAmount >= 700, // Set isIncrease to true if >= 700, else false
+          );
+        }).toList();
+
 
         return Scaffold(
           key: _scaffoldKey,
@@ -109,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Expanded(
                                   child: _buildGlassStatCard(
                                     'Total Spending',
-                                    '\$2,450.80',
+                                    '\Rs.${userController.spendingsAndSavings["totalSpendings"]?.toStringAsFixed(2) ?? "0.00"}',
                                     CupertinoIcons.money_dollar_circle,
                                     AppColors.spendingRed,
                                   ),
@@ -118,8 +123,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Expanded(
                                   child: _buildGlassStatCard(
                                     'Total Savings',
-                                    '\$850.20',
+                                    '\Rs.${userController.spendingsAndSavings["totalSavings"]?.toStringAsFixed(2) ?? "0.00"}',
                                     CupertinoIcons.briefcase_fill,
+                                    AppColors.savingsGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildGlassStatCard(
+                                    'Total Income',
+                                    '\Rs.${userController.spendingsAndSavings["totalIncome"]?.toStringAsFixed(2) ?? "0.00"}',
+                                    CupertinoIcons.money_dollar_circle,
+                                    AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: _buildGlassStatCard(
+                                    'Savings Percentage',
+                                    '${userController.spendingsAndSavings["savingsPercentage"]?.toStringAsFixed(2) ?? "0.00"}%',
+                                    CupertinoIcons.chart_pie_fill,
                                     AppColors.savingsGreen,
                                   ),
                                 ),
@@ -360,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Investments',
+                'Meetings',
                 style: AppTextStyles.profileTitle,
               ),
               TextButton(
@@ -373,27 +403,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildInvestmentCard(
-                  'Stock Market',
-                  'Up 8.2%',
-                  CupertinoIcons.graph_square,
-                  true,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildInvestmentCard(
-                  'Fixed Deposit',
-                  'Up 3.5%',
-                  CupertinoIcons.lock_shield_fill,
-                  true,
-                ),
-              ),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: _buildInvestmentCard(
+          //         'Stock Market',
+          //         'Up 8.2%',
+          //         CupertinoIcons.graph_square,
+          //         true,
+          //       ),
+          //     ),
+          //     const SizedBox(width: 16),
+          //     Expanded(
+          //       child: _buildInvestmentCard(
+          //         'Fixed Deposit',
+          //         'Up 3.5%',
+          //         CupertinoIcons.lock_shield_fill,
+          //         true,
+          //       ),
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );

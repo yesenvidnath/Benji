@@ -52,21 +52,21 @@ class ExpensesList extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildStatCard(
-                'Total Expenses',
-                total.toString(),
-                AppColors.primary,
-              ),
-              const SizedBox(width: 12),
-              _buildStatCard(
-                'Increasing',
-                '$increasing/$total',
-                increasing > total / 2 ? AppColors.error : AppColors.success,
-              ),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     _buildStatCard(
+          //       'Total Expenses',
+          //       total.toString(),
+          //       AppColors.primary,
+          //     ),
+          //     const SizedBox(width: 12),
+          //     _buildStatCard(
+          //       'Increasing',
+          //       '$increasing/$total',
+          //       increasing > total / 2 ? AppColors.error : AppColors.success,
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );
@@ -122,7 +122,7 @@ class ExpensesList extends StatelessWidget {
 
   Widget _buildExpenseItem(ExpenseItem expense) {
     final formattedAmount = expense.amount != null 
-        ? NumberFormat.currency(symbol: '\$').format(expense.amount)
+        ? NumberFormat.currency(symbol: 'Rs').format(expense.amount)
         : expense.percentage;
 
     return InkWell(

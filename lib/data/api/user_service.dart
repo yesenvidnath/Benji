@@ -19,4 +19,21 @@ class UserService {
       throw Exception("Failed to fetch profile: ${response.body}");
     }
   }
+
+  Future<Map<String, dynamic>> getSystemGeneratedInsights(String token) async {
+    final response = await http.get(
+      Uri.parse(ApiEndpoints.getSystemGeneratedInstings),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Failed to fetch insights: ${response.body}");
+    }
+  }
+
 }
