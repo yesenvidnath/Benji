@@ -3,14 +3,17 @@ import 'screens/common/login_screen.dart';
 import 'screens/common/splash_screen.dart';
 import 'screens/common/profile_screen.dart';
 
-// Auth contorllers
+// Import controllers
 import 'package:provider/provider.dart';
 import 'controllers/auth_controller.dart';
+import 'controllers/user_controller.dart'; // Import UserController
+
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthController()),
+        ChangeNotifierProvider(create: (_) => UserController()), // Add UserController
       ],
       child: const MyApp(),
     ),

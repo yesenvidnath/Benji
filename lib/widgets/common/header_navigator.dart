@@ -11,11 +11,11 @@ import '../../../screens/user/professional_list_screen.dart';
 import '../../../screens/user/user_meetings_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../controllers/auth_controller.dart';
+import '../../../controllers/user_controller.dart';
 
 class HeaderNavigator extends StatelessWidget {
   final String currentRoute;
   final String userName;
-  final String? userAvatar;
   final VoidCallback onMenuPressed;
   final VoidCallback onSearchPressed;
   final VoidCallback onProfilePressed;
@@ -24,7 +24,6 @@ class HeaderNavigator extends StatelessWidget {
     super.key,
     required this.currentRoute,
     required this.userName,
-    this.userAvatar,
     required this.onMenuPressed,
     required this.onSearchPressed,
     required this.onProfilePressed,
@@ -202,61 +201,70 @@ class HeaderNavigator extends StatelessWidget {
     });
   }
 
-  static Widget buildDrawer(BuildContext context) {
+static Widget buildDrawer(BuildContext context) {
     return Drawer(
       backgroundColor: AppColors.surface,
       elevation: 0,
       child: SafeArea(
         child: Column(
           children: [
-            // Header section
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.inputBorder.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.2),
-                        width: 2,
-                      ),
-                    ),
-                    child: const CircleAvatar(
-                      radius: 32,
-                      backgroundColor: AppColors.surface,
-                      child: Icon(
-                        CupertinoIcons.person,
-                        color: AppColors.primary,
-                        size: 32,
+            // Header section with profile image
+            Consumer<UserController>(
+              builder: (context, userController, child) {
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: AppColors.inputBorder.withOpacity(0.2),
+                        width: 1,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Menu',
-                    style: AppTextStyles.h3.copyWith(
-                      color: AppColors.textPrimary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.2),
+                            width: 2,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 32,
+                          backgroundColor: AppColors.surface,
+                          backgroundImage: userController.profileImage.isNotEmpty
+                              ? NetworkImage(userController.profileImage)
+                              : null,
+                          child: userController.profileImage.isEmpty
+                              ? const Icon(
+                                  CupertinoIcons.person,
+                                  color: AppColors.primary,
+                                  size: 32,
+                                )
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Menu',
+                        style: AppTextStyles.h3.copyWith(
+                          color: AppColors.textPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
             
-            // Menu items in scrollable list
+            // Rest of the drawer content remains the same
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -434,104 +442,152 @@ class HeaderNavigator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.98),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      margin: const EdgeInsets.only(bottom: 2),
-      child: SafeArea(
-        bottom: false,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    _buildIconButton(
-                      icon: CupertinoIcons.bars,
-                      onPressed: onMenuPressed,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _getScreenTitle(),
-                      style: AppTextStyles.h3.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  _buildIconButton(
-                    icon: CupertinoIcons.search,
-                    onPressed: onSearchPressed,
-                  ),
-                  const SizedBox(width: 12),
-                  GestureDetector(
-                    onTap: onProfilePressed,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary.withOpacity(0.9),
-                            AppColors.primaryLight,
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.25),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                            spreadRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.white,
-                        backgroundImage: userAvatar != null
-                            ? NetworkImage(userAvatar!)
-                            : null,
-                        child: userAvatar == null
-                            ? Text(
-                                userName.isNotEmpty
-                                    ? userName[0].toUpperCase()
-                                    : '?',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              )
-                            : null,
-                      ),
-                    ),
-                  ),
-                ],
+    return Consumer<UserController>(
+      builder: (context, userController, child) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface.withOpacity(0.98),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+                spreadRadius: 0,
               ),
             ],
           ),
-        ),
-      ),
+          margin: const EdgeInsets.only(bottom: 2),
+          child: SafeArea(
+            bottom: false,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildIconButton(
+                          icon: CupertinoIcons.bars,
+                          onPressed: onMenuPressed,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _getScreenTitle(),
+                          style: AppTextStyles.h3.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Row(
+                    children: [
+                    Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: _buildIconButton(
+                            icon: CupertinoIcons.bell_fill,
+                            onPressed: () {
+                              Future.microtask(() {
+                                if (!context.mounted) return;
+                                
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => NotificationScreen(),
+                                  ),
+                                );
+                              });
+                            },
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              '3',  // Replace with actual notification count
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Colors.white,
+                                fontSize: 10,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: onProfilePressed,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.primary.withOpacity(0.9),
+                                AppColors.primaryLight,
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.25),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                                spreadRadius: 0,
+                              ),
+                            ],
+                          ),
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white,
+                            backgroundImage: userController.profileImage.isNotEmpty
+                                ? NetworkImage(userController.profileImage)
+                                : null,
+                            child: userController.profileImage.isEmpty
+                                ? Text(
+                                    userName.isNotEmpty
+                                        ? userName[0].toUpperCase()
+                                        : '?',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 class ApiEndpoints{
 
   static const String baseUrl = "http://127.0.0.1:8000/api/user-management-service";
+  static const String baseUrlCustomer = "http://127.0.0.1:8000/api/customer/";
 
   // Authentication & User Management
   static const String registerUser = "$baseUrl/auth/register";
@@ -12,6 +13,7 @@ class ApiEndpoints{
   // Profile Management
   static const String updateProfile = "$baseUrl/auth/profile/update";
   static const String deleteProfile = "$baseUrl/auth/profile/delete";
+  static const String getMyProfile = "$baseUrl/auth/profile/me";
   static const String getProfileById = "$baseUrl/auth/profile/get";
   static const String searchProfiles = "$baseUrl/auth/profile/search";
 
@@ -32,5 +34,12 @@ class ApiEndpoints{
   // Notifications & Messaging
   static const String sendNotification = "$baseUrl/notify/send";
   static const String sendBulkNotifications = "$baseUrl/notify/send-bulk";
+
+
+  // Customer Spending Analysis bot & systamatic instings
+  // 01. Bot analysis
+  static const String getBotgeneratedInstings = "$baseUrlCustomer/consolidated-data";
+  // 02. Systamatic analysis
+  static const String getSystemgeneratedInstings = "$baseUrlCustomer/current-month-data";
 
 }
