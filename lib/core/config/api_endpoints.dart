@@ -2,6 +2,7 @@ class ApiEndpoints{
 
   static const String baseUrl = "http://127.0.0.1:8000/api/user-management-service";
   static const String baseUrlCustomer = "http://127.0.0.1:8000/api/customer";
+  static const String baseUrlExpensess = "http://127.0.0.1:8000/api/Expensess-Management-service";
 
   // Authentication & User Management
   static const String registerUser = "$baseUrl/auth/register";
@@ -37,9 +38,13 @@ class ApiEndpoints{
 
 
   // Customer Spending Analysis bot & systamatic instings
-  // 01. Bot analysis
   static const String getBotgeneratedInstings = "$baseUrlCustomer/consolidated-data";
-  // 02. Systamatic analysis
   static const String getSystemGeneratedInstings = "$baseUrlCustomer/current-month-data";
 
+  // Expensess Adding
+  static const String getAllReasons = "$baseUrlExpensess/reasons/all";
+  static const String addAllExpensess = "$baseUrlExpensess/add";
+  static const String updateAllExpensess = "$baseUrlExpensess/update";
+  static const String deleteAllExpensess = "$baseUrlExpensess/delete";
+  static const String getAllExpensess = "$baseUrlExpensess/all";
 }

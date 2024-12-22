@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/user_controller.dart'; // Import UserController
 import 'controllers/analytics_controller.dart';
+import 'controllers/expenses_controller.dart';
 
 
 void main() {

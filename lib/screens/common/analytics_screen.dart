@@ -92,7 +92,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                   children: [
                     const Text(
                       'Filter',
-                      style: AppTextStyles.bodyLarge,
+                      style: AppTextStyles.profileTitle,
                     ),
                     CupertinoButton(
                       padding: EdgeInsets.zero,
@@ -191,6 +191,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                 ),
               ),
               MLAnalyticsGraph(selectedFilter: selectedFilter),
+              const SizedBox(height: 20),
               MLExpensesList(expenses: expenses),
               const SizedBox(height: 20),
             ],

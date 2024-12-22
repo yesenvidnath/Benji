@@ -5,6 +5,7 @@ import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/header_navigator.dart';
+import '../../controllers/expenses_controller.dart';
 
 class AddExpensesScreen extends StatefulWidget {
   const AddExpensesScreen({super.key});
@@ -14,15 +15,15 @@ class AddExpensesScreen extends StatefulWidget {
 }
 
 class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTickerProviderStateMixin {
-
   final _formKey = GlobalKey<FormState>();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late TabController _tabController;
-  
+  final ExpensesController _expensesController = ExpensesController();
+
   final List<ExpenseItem> _pendingExpenses = [];
   final List<ExpenseItem> _savedExpenses = [];
+  final List<ExpenseItem> _historyExpenses = [];
 
-  // Form Controllers
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
@@ -31,29 +32,57 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
 
   final DateFormat _dateFormat = DateFormat('dd MMM yyyy');
 
-  final List<String> _categories = [
-    'Food',
-    'Transport',
-    'Shopping',
-    'Bills',
-    'Entertainment',
-    'Freelancing',
-    'Health',
-    'Education',
-    'Other'
-  ];
+  List<String> _categories = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _fetchInitialData();
+  }
+
+  Future<void> _fetchInitialData() async {
+    try {
+      await Future.wait([
+        _expensesController.fetchAllExpenses(),
+        _expensesController.fetchAllReasons(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _categories = _expensesController.reasons;
+          
+          // Clear and update history expenses
+          _historyExpenses.clear();
+          for (var expenseData in _expensesController.allExpenses) {
+            // Extract expense items from the expense data
+            final expenseItems = expenseData['expense_items'] as List<dynamic>? ?? [];
+            
+            for (var item in expenseItems) {
+              _historyExpenses.add(ExpenseItem(
+                date: DateTime.parse(item['created_at'] ?? DateTime.now().toIso8601String()),
+                amount: double.tryParse(item['amount'].toString()) ?? 0.0,
+                description: item['description'],
+                category: item['reason'] ?? 'Unknown',
+              ));
+            }
+          }
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load data: $error')),
+        );
+      }
+    }
   }
 
   void _handleMenuPress(BuildContext context) {
     _scaffoldKey.currentState?.openDrawer();
   }
 
- void _addExpense() {
+  void _addExpense() {
     if (_formKey.currentState!.validate() && _selectedCategory != null) {
       final newExpense = ExpenseItem(
         date: _selectedDate,
@@ -113,20 +142,53 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
 
   void _saveAllExpenses() {
     if (_pendingExpenses.isNotEmpty) {
-      setState(() {
-        _savedExpenses.insertAll(0, _pendingExpenses);
-        _pendingExpenses.clear();
-        _useSharedDate = false;
-      });
+      final List<Map<String, dynamic>> expensesDetails = _pendingExpenses.map((expense) {
+        final reasonIndex = _categories.indexOf(expense.category);
+        final reasonID = reasonIndex != -1 ? reasonIndex + 1 : null;
+
+        return {
+          "reason_ID": reasonID,
+          "amount": expense.amount,
+          "description": expense.description ?? "",
+        };
+      }).toList();
+
+      try {
+        final controller = ExpensesController();
+        controller.addAllExpenses(expensesDetails).then((_) {
+          // Success
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Expenses saved to the server successfully!')),
+          );
+
+          setState(() {
+            _savedExpenses.insertAll(0, _pendingExpenses);
+            _historyExpenses.addAll(_pendingExpenses); // Add to history
+            _pendingExpenses.clear();
+            _useSharedDate = false;
+          });
+        }).catchError((error) {
+          // Failure
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save expenses: $error')),
+          );
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unexpected error: $e')),
+        );
+      }
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All expenses saved successfully!')),
+        const SnackBar(content: Text('No expenses to save!')),
       );
-      _tabController.animateTo(1); // Switch to Saved Expenses tab
     }
   }
 
+
+
   Future<void> _showDatePicker() async {
-   await showCupertinoModalPopup(
+    await showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
         return Container(
@@ -235,11 +297,10 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
     );
   }
 
-
   Widget _buildInputField({
-      required Widget child,
-      required IconData icon,
-    }) {
+    required Widget child,
+    required IconData icon,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -565,44 +626,161 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
     );
   }
 
-  Widget _buildSaveAllButton() {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withOpacity(0.8),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(15),
-          onTap: _saveAllExpenses,
-          child: Center(
-            child: Text(
-              'Save All',
-              style: AppTextStyles.button.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-          ),
-        ),
-      ),
+
+  // Helper method to calculate total
+  double _calculateTotal(List<dynamic> items) {
+    return items.fold(0.0, (sum, item) => sum + (item['amount'] ?? 0));
+  }
+
+  // Helper method to get status color
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'approved':
+        return Colors.green;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  // Update the history tab section in the TabBarView
+  Widget _buildHistoryTab() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _expensesController.allExpenses.length,
+      itemBuilder: (context, index) {
+        final expenseData = _expensesController.allExpenses[index];
+        return _buildExpenseItemCard(expenseData);
+      },
     );
   }
+
+Widget _buildExpenseItemCard(Map<String, dynamic> expenseData) {
+  // Parse the expense data
+  final createdAt = DateTime.parse(expenseData['created_at'] ?? DateTime.now().toIso8601String());
+  final amount = double.tryParse(expenseData['amount'].toString()) ?? 0.0;
+  final reason = expenseData['reason'] ?? 'No reason specified';
+  final description = expenseData['description'];
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header section with date and amount
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Date',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('MMM dd, yyyy').format(createdAt),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Amount',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    '\$${amount.toStringAsFixed(2)}',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1),
+
+        // Reason section
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Reason',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                reason,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Description section (if available)
+        if (description != null && description.toString().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Description',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description.toString(),
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -654,6 +832,7 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
                   tabs: const [
                     Tab(text: 'Add Expenses'),
                     Tab(text: 'Saved Expenses'),
+                    Tab(text: 'History'),
                   ],
                 ),
               ),
@@ -674,6 +853,7 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
                     padding: const EdgeInsets.all(16),
                     child: _buildExpenseList(_savedExpenses, false),
                   ),
+                  _buildHistoryTab(),
                 ],
               ),
             ),
@@ -684,6 +864,8 @@ class _AddExpensesScreenState extends State<AddExpensesScreen> with SingleTicker
     );
   }
 }
+
+
 
 class ExpenseItem {
   final double amount;

@@ -52,21 +52,7 @@ class ExpensesList extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // Row(
-          //   children: [
-          //     _buildStatCard(
-          //       'Total Expenses',
-          //       total.toString(),
-          //       AppColors.primary,
-          //     ),
-          //     const SizedBox(width: 12),
-          //     _buildStatCard(
-          //       'Increasing',
-          //       '$increasing/$total',
-          //       increasing > total / 2 ? AppColors.error : AppColors.success,
-          //     ),
-          //   ],
-          // ),
+        
         ],
       ),
     );
