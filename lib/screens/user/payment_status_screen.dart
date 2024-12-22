@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
+import 'package:url_launcher/url_launcher.dart'; // For opening URLs
+import 'package:share_plus/share_plus.dart'; // For sharing URLs
 import '../../../core/theme/text_styles.dart';
+import 'package:flutter/services.dart';
 import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/header_navigator.dart';
 
@@ -81,7 +84,7 @@ class PaymentStatusScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       status == PaymentStatus.success 
-                          ? 'Meeting crteaed Successfuly!' 
+                          ? 'Meeting Booked Successfuly!' 
                           : 'Meeting Failed',
                       style: AppTextStyles.h2.copyWith(
                         color: status == PaymentStatus.success 
@@ -167,24 +170,40 @@ class PaymentStatusScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Meeting ID',
-                            style: AppTextStyles.bodyMedium,
-                          ),
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                '#TRX${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                              const Text(
+                                'Payment URL',
+                                style: AppTextStyles.bodyMedium,
                               ),
-                              const SizedBox(width: 8),
-                              const Icon(CupertinoIcons.doc_on_doc, size: 18, color: Colors.blue),
+                              IconButton(
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: paymentUrl));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Payment URL copied to clipboard'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(CupertinoIcons.doc_on_doc, size: 18, color: Colors.blue),
+                                constraints: const BoxConstraints(),
+                                padding: EdgeInsets.zero,
+                              ),
                             ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            paymentUrl,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: Colors.black54,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
                           ),
                         ],
                       ),
@@ -196,6 +215,7 @@ class PaymentStatusScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Row(
                         children: [
+                          // Complete Payment Button
                           Expanded(
                             child: Container(
                               height: 56,
@@ -219,13 +239,48 @@ class PaymentStatusScreen extends StatelessWidget {
                                 color: Colors.transparent,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  onTap: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                                  onTap: () async {
+                                    if (paymentUrl.isNotEmpty) {
+                                      print("Attempting to launch URL: $paymentUrl");
+                                      final Uri url = Uri.parse(paymentUrl);
+                                      try {
+                                        final canLaunch = await canLaunchUrl(url);
+                                        print("Can launch URL: $canLaunch");
+                                        
+                                        if (canLaunch) {
+                                          final result = await launchUrl(
+                                            url,
+                                            mode: LaunchMode.inAppWebView,
+                                            webViewConfiguration: const WebViewConfiguration(
+                                              enableJavaScript: true,
+                                              enableDomStorage: true,
+                                            ),
+                                          );
+                                          print("Launch result: $result");
+                                        } else {
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(content: Text("Unable to launch payment URL")),
+                                            );
+                                          }
+                                        }
+                                      } catch (e) {
+                                       
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text("Benji is having difuculty redirecting, please  copy and pate the code to your browser")),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
                                   child: Center(
                                     child: Text(
-                                      'Back to Home',
+                                      'Complete Payment',
                                       style: AppTextStyles.button.copyWith(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 16,
+                                        color: Colors.white,
                                       ),
                                     ),
                                   ),
@@ -234,8 +289,11 @@ class PaymentStatusScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 16),
+                          // Share Button
                           IconButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Share.share('Payment Link: $paymentUrl');
+                            },
                             icon: const Icon(CupertinoIcons.share, color: Color(0xFF0A0F44)),
                             style: IconButton.styleFrom(
                               backgroundColor: AppColors.buttonPrimary.withOpacity(0.1),
@@ -244,7 +302,7 @@ class PaymentStatusScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../data/models/professional.dart';
+import '../../../data/models/payment.dart';
 import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/header_navigator.dart';
 import '../../controllers/meetings_controller.dart';
@@ -42,13 +43,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
     });
 
     try {
-      // Parse the current bookingDateTime format
+      // Parse and format the bookingDateTime
       final parsedDateTime = DateFormat('dd MMMM yyyy h:mm a').parse(widget.bookingDateTime);
-
-      // Reformat to 'yyyy-MM-dd HH:mm:ss' for the API
       final formattedDateTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(parsedDateTime);
 
-      // Call the API with the formatted datetime
+      // Call the API
       await meetingsController.bookMeeting(
         int.parse(widget.professional.id), // Convert id to int
         formattedDateTime, // Pass formatted datetime
@@ -56,6 +55,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       final response = meetingsController.bookingResponse;
       if (response != null) {
+        // Save Payment Details to Model
+        final payment = Payment(
+          meetingId: response['meeting_id'],
+          paymentUrl: response['payment_url'],
+        );
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response['message'])),
         );
@@ -70,8 +75,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               professionalRole: widget.professional.role,
               amount: widget.professional.chargePerHr,
               adminFee: 150.50, // Platform fee
-              meetingId: response['meeting_id'], // Pass meeting ID
-              paymentUrl: response['payment_url'], // Pass payment URL
+              meetingId: payment.meetingId,
+              paymentUrl: payment.paymentUrl,
             ),
           ),
         );
