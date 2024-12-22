@@ -52,4 +52,6 @@ class ApiEndpoints{
   static const String getAllprofessionals = "$baseUrlCustomer/professionals/all";
   static const String getAllprofessionalTypes = "$baseUrlCustomer/professional-types";
   static const String bookMeeting = "$baseUrlCustomer/book-meeting"; 
+  static const String getPendingMeetings = "$baseUrlCustomer/meetings/all"; 
+  static const String getInocompleatedPaidMeetings = "$baseUrlCustomer/meetings/InCompleatePayments"; 
 }

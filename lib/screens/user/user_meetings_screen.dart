@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
+import '../../controllers/meetings_controller.dart';
 import '../../../widgets/common/header_navigator.dart';
 import '../../../widgets/common/footer_navigator.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter/services.dart'; 
 
 class Meeting {
   final String mentorName;
@@ -43,7 +47,17 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
   @override
   void initState() {
     super.initState();
+    // Initialize the TabController with 2 tabs (My Meetups and History)
     _tabController = TabController(length: 2, vsync: this);
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+  Future<void> _initializeData() async {
+    final meetingsController = Provider.of<MeetingsController>(context, listen: false);
+    await meetingsController.fetchPendingMeetings();
+    await meetingsController.fetchIncompletePaidMeetings();
   }
 
   @override
@@ -174,18 +188,44 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
                   overlayColor: MaterialStateProperty.all(Colors.transparent),
                   tabs: const [
                     Tab(text: 'My Meetups'),
-                    Tab(text: 'History'),
+                    Tab(text: 'Pending Payment'),
                   ],
                 ),
               ),
             ),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildMeetupsList(isHistory: false),
-                  _buildMeetupsList(isHistory: true),
-                ],
+              child: Consumer<MeetingsController>(
+                builder: (context, meetingsController, child) {
+                  if (meetingsController.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (meetingsController.errorMessage != null) {
+                    return Center(
+                      child: Text(meetingsController.errorMessage!),
+                    );
+                  }
+
+                  final meetings = meetingsController.pendingMeetings;
+
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // My Meetups
+                        _buildMeetupsList(
+                          isHistory: false,
+                          meetings: meetingsController.pendingMeetings,
+                        ),
+                        // Pending Payment Tab (incompletePaidMeetings only)
+                        _buildMeetupsList(
+                          isHistory: true,
+                          meetings: meetingsController.incompletePaidMeetings
+                              .where((meeting) => meeting['meeting_url'] == null)
+                              .toList(),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
             const FooterNavigator(currentRoute: 'meetings'),
@@ -195,12 +235,18 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
     );
   }
 
-  Widget _buildMeetupsList({required bool isHistory}) {
+
+
+  Widget _buildMeetupsList({required bool isHistory, required List<Map<String, dynamic>> meetings}) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _meetings.length,
+      itemCount: meetings.length,
       itemBuilder: (context, index) {
-        final meeting = _meetings[index];
+        final meeting = meetings[index];
+        final startTime = DateTime.parse(meeting['start_time']);
+        final endTime = DateTime.parse(meeting['end_time']);
+        final meetingUrl = meeting['meeting_url'];
+
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
@@ -264,7 +310,7 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
                         ],
                       ),
                       child: Text(
-                        meeting.mentorName.substring(0, 2).toUpperCase(),
+                        meeting['professional_name'].substring(0, 2).toUpperCase(),
                         style: TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -277,14 +323,15 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            meeting.mentorName,
+                            meeting['professional_name'],
                             style: AppTextStyles.bodyLarge.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${meeting.dateTime.day} ${_getMonth(meeting.dateTime.month)} ${meeting.dateTime.year}',
+                            'Start: ${DateFormat('MMM dd, yyyy hh:mm a').format(startTime)}\n'
+                            'End: ${DateFormat('MMM dd, yyyy hh:mm a').format(endTime)}',
                             style: AppTextStyles.bodyMedium.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -292,15 +339,9 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
                         ],
                       ),
                     ),
-                    Text(
-                      'Rs. ${meeting.price.toStringAsFixed(2)}',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                   ],
                 ),
-                if (!isHistory) ...[
+                if (meetingUrl != null && !isHistory) ...[
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -309,30 +350,54 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           color: AppColors.primary,
                           borderRadius: BorderRadius.circular(12),
-                          onPressed: () => _showRescheduleDialog(context, meeting),
-                          child: const Text(
-                            'Re-Schedule',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: meetingUrl));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Meeting URL copied to clipboard!',
+                                  style: AppTextStyles.bodySmall.copyWith(color: Colors.white),
+                                ),
+                                backgroundColor: AppColors.primary,
+                              ),
+                            );
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.copy, size: 16, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                'Join Meeting',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                    ],
+                  ),
+                ] else if (meetingUrl == null) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
                       Expanded(
-                        child: CupertinoButton(
+                        child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          onPressed: () {
-                            // Handle cancel
-                          },
-                          child: Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: AppColors.error,
-                              fontWeight: FontWeight.w600,
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Incomplete Payment',
+                              style: TextStyle(
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -347,6 +412,8 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
       },
     );
   }
+
+
 
   String _getMonth(int month) {
     const months = [

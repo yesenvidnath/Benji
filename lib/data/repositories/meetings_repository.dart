@@ -29,4 +29,12 @@ class MeetingsRepository {
       throw e;
     }
   }
+
+  Future<List<Map<String, dynamic>>> fetchPendingMeetings() async {
+    return await _meetingsService.fetchPendingMeetings();
+  }
+
+  Future<List<Map<String, dynamic>>> fetchIncompletePaidMeetings() async {
+    return await _meetingsService.fetchIncompletePaidMeetings();
+  }
 }

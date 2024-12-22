@@ -78,4 +78,47 @@ class MeetingsService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchPendingMeetings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      throw Exception("Authentication token is missing.");
+    }
+
+    final response = await http.get(
+      Uri.parse(ApiEndpoints.getPendingMeetings),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data['data']);
+    } else {
+      throw Exception("Failed to fetch pending meetings: ${response.statusCode}");
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchIncompletePaidMeetings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      throw Exception("Authentication token is missing.");
+    }
+
+    final response = await http.get(
+      Uri.parse(ApiEndpoints.getInocompleatedPaidMeetings),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return List<Map<String, dynamic>>.from(data['data']);
+    } else {
+      throw Exception(
+        "Failed to fetch incomplete paid meetings: ${response.statusCode}",
+      );
+    }
+  }
 }
