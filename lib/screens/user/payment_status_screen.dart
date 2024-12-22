@@ -16,7 +16,10 @@ class PaymentStatusScreen extends StatelessWidget {
   final String professionalRole;
   final double amount;
   final double adminFee;
+  final String paymentUrl;
+  final int meetingId;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  
   
   PaymentStatusScreen({
     super.key,
@@ -25,6 +28,8 @@ class PaymentStatusScreen extends StatelessWidget {
     required this.professionalRole,
     required this.amount,
     required this.adminFee,
+    required this.paymentUrl,
+    required this.meetingId,
   });
 
   void _handleMenuPress(BuildContext context) {
@@ -34,7 +39,6 @@ class PaymentStatusScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double total = amount + adminFee;
-
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: AppColors.background.withOpacity(0.98),
@@ -77,8 +81,8 @@ class PaymentStatusScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       status == PaymentStatus.success 
-                          ? 'Payment Successful!' 
-                          : 'Payment Failed',
+                          ? 'Meeting crteaed Successfuly!' 
+                          : 'Meeting Failed',
                       style: AppTextStyles.h2.copyWith(
                         color: status == PaymentStatus.success 
                             ? AppColors.success 
@@ -148,7 +152,7 @@ class PaymentStatusScreen extends StatelessWidget {
                       ),
                     ),
 
-                    // Transaction ID
+                    // Meeting ID
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 24),
                       padding: const EdgeInsets.all(16),
@@ -167,7 +171,7 @@ class PaymentStatusScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           const Text(
-                            'Transaction ID',
+                            'Meeting ID',
                             style: AppTextStyles.bodyMedium,
                           ),
                           Row(

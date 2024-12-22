@@ -46,5 +46,36 @@ class MeetingsService {
     }
   }
 
-  
+  Future<Map<String, dynamic>> bookMeeting(int professionalId, String startTime) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) {
+      throw Exception("Authentication token is missing.");
+    }
+
+    final uri = Uri.parse(ApiEndpoints.bookMeeting);
+
+
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'professional_id': professionalId,
+        'start_time': startTime,
+      }),
+    );
+
+    if (response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      // Log unexpected responses for debugging
+      // print("Failed Response: ${response.body}");
+      throw Exception("Failed to book meeting: ${response.statusCode}");
+    }
+  }
+
 }

@@ -10,6 +10,10 @@ class MeetingsController extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
 
+  bool isBooking = false;
+  String? bookingErrorMessage;
+  Map<String, dynamic>? bookingResponse;
+
   Future<void> fetchAllProfessionals() async {
     try {
       isLoading = true;
@@ -40,6 +44,21 @@ class MeetingsController extends ChangeNotifier {
     } catch (e) {
       isLoading = false;
       errorMessage = "Failed to load professional types: $e";
+      notifyListeners();
+    }
+  }
+
+  Future<void> bookMeeting(int professionalId, String startTime) async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      bookingResponse = await _meetingsRepository.bookMeeting(professionalId, startTime);
+    } catch (e) {
+      print("Error in MeetingsController.bookMeeting: $e");
+      rethrow;
+    } finally {
+      isLoading = false;
       notifyListeners();
     }
   }

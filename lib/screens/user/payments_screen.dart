@@ -1,31 +1,98 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../data/models/professional.dart';
 import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/header_navigator.dart';
+import '../../controllers/meetings_controller.dart';
 import './payment_status_screen.dart';
+import 'package:intl/intl.dart';
 
-class PaymentScreen extends StatelessWidget {
+
+class PaymentScreen extends StatefulWidget {
   final Professional professional;
   final String bookingDateTime;
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  PaymentScreen({
+  const PaymentScreen({
     super.key,
     required this.professional,
     required this.bookingDateTime,
   });
 
+  @override
+  State<PaymentScreen> createState() => _PaymentScreenState();
+}
+
+class _PaymentScreenState extends State<PaymentScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool isProcessing = false;
+  
+
   void _handleMenuPress(BuildContext context) {
     _scaffoldKey.currentState?.openDrawer();
   }
 
+  Future<void> _proceedToPayment() async {
+    final meetingsController = Provider.of<MeetingsController>(context, listen: false);
+
+    setState(() {
+      isProcessing = true; // Ensure `isProcessing` is in your state
+    });
+
+    try {
+      // Parse the current bookingDateTime format
+      final parsedDateTime = DateFormat('dd MMMM yyyy h:mm a').parse(widget.bookingDateTime);
+
+      // Reformat to 'yyyy-MM-dd HH:mm:ss' for the API
+      final formattedDateTime = DateFormat('yyyy-MM-dd HH:mm:ss').format(parsedDateTime);
+
+      // Call the API with the formatted datetime
+      await meetingsController.bookMeeting(
+        int.parse(widget.professional.id), // Convert id to int
+        formattedDateTime, // Pass formatted datetime
+      );
+
+      final response = meetingsController.bookingResponse;
+      if (response != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['message'])),
+        );
+
+        // Navigate to PaymentStatusScreen with payment details
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentStatusScreen(
+              status: PaymentStatus.success,
+              professionalName: widget.professional.name,
+              professionalRole: widget.professional.role,
+              amount: widget.professional.chargePerHr,
+              adminFee: 150.50, // Platform fee
+              meetingId: response['meeting_id'], // Pass meeting ID
+              paymentUrl: response['payment_url'], // Pass payment URL
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to book meeting: $e")),
+      );
+    } finally {
+      setState(() {
+        isProcessing = false;
+      });
+    }
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     // Calculate charges
-    final double consultationFee = professional.chargePerHr;
+    final double consultationFee = widget.professional.chargePerHr;
     const double adminFee = 150.50;
     final double totalAmount = consultationFee + adminFee;
 
@@ -75,11 +142,11 @@ class PaymentScreen extends StatelessWidget {
                                   children: [
                                     CircleAvatar(
                                       radius: 35,
-                                      backgroundImage: professional.avatarUrl.isNotEmpty
-                                          ? NetworkImage(professional.avatarUrl)
+                                      backgroundImage: widget.professional.avatarUrl.isNotEmpty
+                                          ? NetworkImage(widget.professional.avatarUrl)
                                           : null,
                                       backgroundColor: AppColors.primaryLight,
-                                      child: professional.avatarUrl.isEmpty
+                                      child: widget.professional.avatarUrl.isEmpty
                                           ? const Icon(Icons.person, size: 35, color: AppColors.textPrimary)
                                           : null,
                                     ),
@@ -89,7 +156,7 @@ class PaymentScreen extends StatelessWidget {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            professional.name,
+                                            widget.professional.name,
                                             style: AppTextStyles.bodyLarge.copyWith(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 18,
@@ -97,7 +164,7 @@ class PaymentScreen extends StatelessWidget {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            professional.role,
+                                            widget.professional.role,
                                             style: AppTextStyles.bodyMedium.copyWith(
                                               color: AppColors.textSecondary,
                                             ),
@@ -108,7 +175,7 @@ class PaymentScreen extends StatelessWidget {
                                               Icon(Icons.star, size: 16, color: Colors.amber[700]),
                                               const SizedBox(width: 4),
                                               Text(
-                                                '${professional.rating} (${professional.reviewCount} reviews)',
+                                                '${widget.professional.rating} (${widget.professional.reviewCount} reviews)',
                                                 style: AppTextStyles.bodySmall,
                                               ),
                                             ],
@@ -153,7 +220,7 @@ class PaymentScreen extends StatelessWidget {
                                     _buildDetailRow(
                                       CupertinoIcons.calendar,
                                       'Date & Time',
-                                      bookingDateTime,
+                                      widget.bookingDateTime,
                                     ),
                                     const Padding(
                                       padding: EdgeInsets.symmetric(vertical: 12),
@@ -162,7 +229,7 @@ class PaymentScreen extends StatelessWidget {
                                     _buildDetailRow(
                                       CupertinoIcons.doc_text,
                                       'Service',
-                                      professional.specialization,
+                                      widget.professional.specialization,
                                     ),
                                   ],
                                 ),
@@ -247,29 +314,18 @@ class PaymentScreen extends StatelessWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PaymentStatusScreen(
-                                  status: PaymentStatus.success,
-                                  professionalName: professional.name,
-                                  professionalRole: professional.role,
-                                  amount: consultationFee,
-                                  adminFee: adminFee,
-                                ),
-                              ),
-                            );
-                          },
+                          onTap: isProcessing ? null : _proceedToPayment,
                           child: Center(
-                            child: Text(
-                              'Proceed to Payment',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: isProcessing
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : Text(
+                                    'Proceed to Payment',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
                       ),

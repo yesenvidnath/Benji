@@ -23,51 +23,7 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
   String selectedFilter = 'All Professionals';
 
   final List<Professional> professionals = [
-    // Professional(
-    //   name: 'Jouye Medison',
-    //   role: 'Accountant',
-    //   avatarUrl: 'assets/avatars/jouye.png',
-    //   rating: 4.8,
-    //   reviewCount: 128,
-    //   specialization: 'Tax Planning',
-    //   isAvailable: true,
-    // ),
-    // Professional(
-    //   name: 'Lucas Abraham',
-    //   role: 'Banker',
-    //   avatarUrl: 'assets/avatars/lucas.png',
-    //   rating: 4.9,
-    //   reviewCount: 256,
-    //   specialization: 'Investment Banking',
-    //   isAvailable: false,
-    // ),
-    // Professional(
-    //   name: 'John Kealn',
-    //   role: 'Stock Broker',
-    //   avatarUrl: 'assets/avatars/john.png',
-    //   rating: 4.7,
-    //   reviewCount: 89,
-    //   specialization: 'Equity Trading',
-    //   isAvailable: true,
-    // ),
-    // Professional(
-    //   name: 'Yossy Angela',
-    //   role: 'Financial Advisor',
-    //   avatarUrl: 'assets/avatars/yossy.png',
-    //   rating: 4.9,
-    //   reviewCount: 312,
-    //   specialization: 'Retirement Planning',
-    //   isAvailable: false,
-    // ),
-    // Professional(
-    //   name: 'Julia Agustine',
-    //   role: 'Accountant',
-    //   avatarUrl: 'assets/avatars/julia.png',
-    //   rating: 4.6,
-    //   reviewCount: 156,
-    //   specialization: 'Corporate Finance',
-    //   isAvailable: true,
-    // ),
+    
   ];
 
   String searchQuery = '';

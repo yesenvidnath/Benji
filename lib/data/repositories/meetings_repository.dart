@@ -20,4 +20,13 @@ class MeetingsRepository {
   Future<List<String>> fetchAllProfessionalTypes() async {
     return await _meetingsService.fetchAllProfessionalTypes();
   }
+
+  Future<Map<String, dynamic>> bookMeeting(int professionalId, String startTime) async {
+    try {
+      return await _meetingsService.bookMeeting(professionalId, startTime);
+    } catch (e) {
+      // print("Error in MeetingsRepository.bookMeeting: $e");
+      throw e;
+    }
+  }
 }
