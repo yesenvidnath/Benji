@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'screens/common/login_screen.dart';
 import 'screens/common/splash_screen.dart';
 import 'screens/common/profile_screen.dart';
+// import 'screens/common/analytics_screen.dart';
 
 // Import controllers
 import 'package:provider/provider.dart';
 import 'controllers/auth_controller.dart';
 import 'controllers/user_controller.dart'; // Import UserController
+import 'controllers/analytics_controller.dart';
+
 
 void main() {
   runApp(
@@ -14,6 +17,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthController()),
         ChangeNotifierProvider(create: (_) => UserController()), // Add UserController
+        ChangeNotifierProvider(create: (_) => AnalyticsController()),
       ],
       child: const MyApp(),
     ),

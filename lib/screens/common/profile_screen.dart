@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userController = Provider.of<UserController>(context);
+    // final userController = Provider.of<UserController>(context);
 
     return Consumer<UserController>(
       builder: (context, userController, child) {

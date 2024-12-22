@@ -1,12 +1,13 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
-import '../../../widgets/common/analytics_graph.dart';
-import '../../../widgets/common/expense_list.dart';
+import '../../../widgets/common/ml_analytics_graph.dart';
+import '../../../widgets/common/ml_expense_list.dart';
 import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/header_navigator.dart';
+import '../../controllers/analytics_controller.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -19,31 +20,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String selectedFilter = 'Yearly';
-  final List<String> filterOptions = ['Daily', 'Weekly', 'Monthly', 'Yearly'];
-
-  // Sample expense data
-  final List<ExpenseItem> expenses = [
-    ExpenseItem(
-      title: 'Grocery',
-      percentage: '20%',
-      isIncrease: true,
-    ),
-    ExpenseItem(
-      title: 'Internet',
-      percentage: '5%',
-      isIncrease: true,
-    ),
-    ExpenseItem(
-      title: 'Entertainment',
-      percentage: '25%',
-      isIncrease: false,
-    ),
-  ];
+  final List<String> filterOptions = ['Weekly', 'Monthly', 'Yearly'];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+
+  Future<void> _initializeData() async {
+    if (!mounted) return;
+    final analyticsController = Provider.of<AnalyticsController>(context, listen: false);
+    await analyticsController.fetchConsolidatedData();
   }
 
   @override
@@ -57,163 +48,187 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
   }
 
   Widget _buildAnalyticsContent() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-        Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Consumer<AnalyticsController>(
+      builder: (context, analyticsController, child) {
+        if (analyticsController.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (analyticsController.errorMessage != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  analyticsController.errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+                ElevatedButton(
+                  onPressed: _initializeData,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final expenses = analyticsController.expensesData.map((expense) {
+          final amount = double.tryParse(expense["amount"].toString()) ?? 0;
+          return ExpenseItem(
+            title: expense["title"],
+            percentage: "Rs.${expense["amount"]}",
+            isIncrease: amount > 0,
+          );
+        }).toList();
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Filter',
-                style: AppTextStyles.bodyLarge,
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  showCupertinoModalPopup<void>(
-                    context: context,
-                    builder: (BuildContext context) => Container(
-                      height: 216,
-                      padding: const EdgeInsets.only(top: 6.0),
-                      margin: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).viewInsets.bottom,
-                      ),
-                      color: CupertinoColors.systemBackground.resolveFrom(context),
-                      child: SafeArea(
-                        top: false,
-                        child: Column(
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Filter',
+                      style: AppTextStyles.bodyLarge,
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        showCupertinoModalPopup<void>(
+                          context: context,
+                          builder: (BuildContext context) => Container(
+                            height: 216,
+                            padding: const EdgeInsets.only(top: 6.0),
+                            margin: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                            ),
+                            color: CupertinoColors.systemBackground.resolveFrom(context),
+                            child: SafeArea(
+                              top: false,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      CupertinoButton(
+                                        child: Text(
+                                          'Cancel',
+                                          style: AppTextStyles.bodyMedium.copyWith(
+                                            color: AppColors.spendingRed,
+                                          ),
+                                        ),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                      CupertinoButton(
+                                        child: Text(
+                                          'Done',
+                                          style: AppTextStyles.bodyMedium.copyWith(
+                                            color: AppColors.primaryButton,
+                                          ),
+                                        ),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                    ],
+                                  ),
+                                  Expanded(
+                                    child: CupertinoPicker(
+                                      magnification: 1.22,
+                                      squeeze: 1.2,
+                                      useMagnifier: true,
+                                      itemExtent: 32.0,
+                                      scrollController: FixedExtentScrollController(
+                                        initialItem: filterOptions.indexOf(selectedFilter),
+                                      ),
+                                      onSelectedItemChanged: (int selectedItem) {
+                                        setState(() {
+                                          selectedFilter = filterOptions[selectedItem];
+                                        });
+                                      },
+                                      children: List<Widget>.generate(filterOptions.length, (int index) {
+                                        return Center(
+                                          child: Text(
+                                            filterOptions[index],
+                                            style: AppTextStyles.bodyMedium,
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.inputBorder),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                CupertinoButton(
-                                  
-                                  child: Text(
-                                    'Cancel', 
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.spendingRed
-                                    ),
-                                  ),
-                                  onPressed: () => Navigator.pop(context),
-                                ),
-                                CupertinoButton(
-                                  child: Text(
-                                    'Done',
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.primaryButton,
-                                    ),
-                                  
-                                  ),
-                                  onPressed: () => Navigator.pop(context),
-                                ),
-                              ],
+                            Text(
+                              selectedFilter,
+                              style: AppTextStyles.bodyMedium,
                             ),
-                            Expanded(
-                              child: CupertinoPicker(
-                                magnification: 1.22,
-                                squeeze: 1.2,
-                                useMagnifier: true,
-                                itemExtent: 32.0,
-                                scrollController: FixedExtentScrollController(
-                                  initialItem: filterOptions.indexOf(selectedFilter),
-                                ),
-                                onSelectedItemChanged: (int selectedItem) {
-                                  setState(() {
-                                    selectedFilter = filterOptions[selectedItem];
-                                  });
-                                },
-                                children: List<Widget>.generate(filterOptions.length,
-                                    (int index) {
-                                  return Center(
-                                    child: Text(
-                                      filterOptions[index],
-                                      style: AppTextStyles.bodyMedium,
-                                    ),
-                                  );
-                                }),
-                              ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              CupertinoIcons.chevron_down,
+                              size: 16,
+                              color: AppColors.textPrimary,
                             ),
                           ],
                         ),
                       ),
                     ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.inputBorder),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        selectedFilter,
-                        style: AppTextStyles.bodyMedium,
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        CupertinoIcons.chevron_down,
-                        size: 16,
-                        color: AppColors.textPrimary,
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
+              MLAnalyticsGraph(selectedFilter: selectedFilter),
+              MLExpensesList(expenses: expenses),
+              const SizedBox(height: 20),
             ],
           ),
-        ),
-          const AnalyticsGraph(),
-          ExpensesList(expenses: expenses),
-          const SizedBox(height: 20),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildRecommendationsContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionTitle('Recommendations'),
-          const SizedBox(height: 16),
-          _buildRecommendationCard(
-            'Reduce Food Expenses',
-            'Your food expenses are 15% higher than last month. Consider meal planning to reduce costs.',
-            150.0,
-            Icons.restaurant,
+    return Consumer<AnalyticsController>(
+      builder: (context, analyticsController, child) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle('Benji\'s Insight'),
+              const SizedBox(height: 16),
+              _buildRecommendationCard(
+                'Insight',
+                analyticsController.forecastingMessage,
+                0.0,
+                Icons.lightbulb,
+              ),
+              const SizedBox(height: 24),
+              _buildSectionTitle('Predictions'),
+              const SizedBox(height: 16),
+              _buildPredictionCard(
+                'Prediction',
+                analyticsController.insights,
+                0.0,
+                Icons.trending_up,
+              ),
+            ],
           ),
-          _buildRecommendationCard(
-            'Switch Internet Plan',
-            'A cheaper internet plan with similar speeds could save you money monthly.',
-            45.0,
-            Icons.wifi,
-          ),
-          const SizedBox(height: 24),
-          _buildSectionTitle('Predictions'),
-          const SizedBox(height: 16),
-          _buildPredictionCard(
-            'Expected Bills Increase',
-            'Utility bills are predicted to increase by 8% next month based on seasonal patterns.',
-            320.0,
-            Icons.trending_up,
-          ),
-          _buildPredictionCard(
-            'Upcoming Subscriptions',
-            'Three subscription renewals are due next month totaling \$45.',
-            45.0,
-            Icons.calendar_today,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -360,13 +375,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Potential Savings: \$${savings.toStringAsFixed(2)}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                
               ],
             ),
           ),
@@ -426,13 +435,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Expected Amount: \$${amount.toStringAsFixed(2)}',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.warning,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
               ],
             ),
           ),
@@ -440,32 +442,4 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> with SingleTickerProv
       ),
     );
   }
-}
-
-class RecommendationItem {
-  final String title;
-  final String description;
-  final double potentialSavings;
-  final IconData icon;
-
-  RecommendationItem({
-    required this.title,
-    required this.description,
-    required this.potentialSavings,
-    required this.icon,
-  });
-}
-
-class PredictionItem {
-  final String title;
-  final String description;
-  final double expectedAmount;
-  final IconData icon;
-
-  PredictionItem({
-    required this.title,
-    required this.description,
-    required this.expectedAmount,
-    required this.icon,
-  });
 }
