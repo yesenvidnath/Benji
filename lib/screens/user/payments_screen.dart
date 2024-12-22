@@ -10,14 +10,12 @@ import './payment_status_screen.dart';
 class PaymentScreen extends StatelessWidget {
   final Professional professional;
   final String bookingDateTime;
-  final String description;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
+
   PaymentScreen({
     super.key,
     required this.professional,
     required this.bookingDateTime,
-    required this.description,
   });
 
   void _handleMenuPress(BuildContext context) {
@@ -26,9 +24,10 @@ class PaymentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double amount = 1500.00;
+    // Calculate charges
+    final double consultationFee = professional.chargePerHr;
     const double adminFee = 150.50;
-    final double total = amount + adminFee;
+    final double totalAmount = consultationFee + adminFee;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -48,18 +47,18 @@ class PaymentScreen extends StatelessWidget {
               child: Column(
                 children: [
                   Expanded(
-                    child: Center( // Added Center widget here
+                    child: Center(
                       child: SingleChildScrollView(
                         child: Container(
-                          constraints: const BoxConstraints(maxWidth: 600), // Added max width constraint
+                          constraints: const BoxConstraints(maxWidth: 600),
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center, // Added center alignment
-                            crossAxisAlignment: CrossAxisAlignment.center, // Added center alignment
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               // Professional Card
                               Container(
-                                width: double.infinity, // Ensures card takes full width within constraints
+                                width: double.infinity,
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -76,13 +75,11 @@ class PaymentScreen extends StatelessWidget {
                                   children: [
                                     CircleAvatar(
                                       radius: 35,
-                                      // ignore: unnecessary_null_comparison
-                                      backgroundImage: professional.avatarUrl != null
-                                          ? AssetImage(professional.avatarUrl)
+                                      backgroundImage: professional.avatarUrl.isNotEmpty
+                                          ? NetworkImage(professional.avatarUrl)
                                           : null,
                                       backgroundColor: AppColors.primaryLight,
-                                      // ignore: unnecessary_null_comparison
-                                      child: professional.avatarUrl == null
+                                      child: professional.avatarUrl.isEmpty
                                           ? const Icon(Icons.person, size: 35, color: AppColors.textPrimary)
                                           : null,
                                     ),
@@ -122,9 +119,9 @@ class PaymentScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 24),
-                              
+
                               // Appointment Details
                               SizedBox(
                                 width: double.infinity,
@@ -170,9 +167,9 @@ class PaymentScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 24),
-                              
+
                               // Payment Summary
                               SizedBox(
                                 width: double.infinity,
@@ -201,7 +198,7 @@ class PaymentScreen extends StatelessWidget {
                                 ),
                                 child: Column(
                                   children: [
-                                    _buildPaymentRow('Consultation Fee', 'Rs.${amount.toStringAsFixed(2)}'),
+                                    _buildPaymentRow('Consultation Fee', 'Rs.${consultationFee.toStringAsFixed(2)}'),
                                     const SizedBox(height: 12),
                                     _buildPaymentRow('Platform Fee', 'Rs.${adminFee.toStringAsFixed(2)}'),
                                     const Padding(
@@ -210,7 +207,7 @@ class PaymentScreen extends StatelessWidget {
                                     ),
                                     _buildPaymentRow(
                                       'Total Amount',
-                                      'Rs.${total.toStringAsFixed(2)}',
+                                      'Rs.${totalAmount.toStringAsFixed(2)}',
                                       isTotal: true,
                                     ),
                                   ],
@@ -222,6 +219,7 @@ class PaymentScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+
                   // Payment Button
                   Container(
                     constraints: const BoxConstraints(maxWidth: 600),
@@ -257,7 +255,7 @@ class PaymentScreen extends StatelessWidget {
                                   status: PaymentStatus.success,
                                   professionalName: professional.name,
                                   professionalRole: professional.role,
-                                  amount: amount,
+                                  amount: consultationFee,
                                   adminFee: adminFee,
                                 ),
                               ),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../data/models/professional.dart';
 import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/header_navigator.dart';
+import '../../controllers/meetings_controller.dart';
 import './booking_screen.dart';
 
 class ProfessionalListScreen extends StatefulWidget {
@@ -15,69 +17,92 @@ class ProfessionalListScreen extends StatefulWidget {
 }
 
 class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
+
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   String selectedFilter = 'All Professionals';
 
   final List<Professional> professionals = [
-    Professional(
-      name: 'Jouye Medison',
-      role: 'Accountant',
-      avatarUrl: 'assets/avatars/jouye.png',
-      rating: 4.8,
-      reviewCount: 128,
-      specialization: 'Tax Planning',
-      isAvailable: true,
-    ),
-    Professional(
-      name: 'Lucas Abraham',
-      role: 'Banker',
-      avatarUrl: 'assets/avatars/lucas.png',
-      rating: 4.9,
-      reviewCount: 256,
-      specialization: 'Investment Banking',
-      isAvailable: false,
-    ),
-    Professional(
-      name: 'John Kealn',
-      role: 'Stock Broker',
-      avatarUrl: 'assets/avatars/john.png',
-      rating: 4.7,
-      reviewCount: 89,
-      specialization: 'Equity Trading',
-      isAvailable: true,
-    ),
-    Professional(
-      name: 'Yossy Angela',
-      role: 'Financial Advisor',
-      avatarUrl: 'assets/avatars/yossy.png',
-      rating: 4.9,
-      reviewCount: 312,
-      specialization: 'Retirement Planning',
-      isAvailable: false,
-    ),
-    Professional(
-      name: 'Julia Agustine',
-      role: 'Accountant',
-      avatarUrl: 'assets/avatars/julia.png',
-      rating: 4.6,
-      reviewCount: 156,
-      specialization: 'Corporate Finance',
-      isAvailable: true,
-    ),
+    // Professional(
+    //   name: 'Jouye Medison',
+    //   role: 'Accountant',
+    //   avatarUrl: 'assets/avatars/jouye.png',
+    //   rating: 4.8,
+    //   reviewCount: 128,
+    //   specialization: 'Tax Planning',
+    //   isAvailable: true,
+    // ),
+    // Professional(
+    //   name: 'Lucas Abraham',
+    //   role: 'Banker',
+    //   avatarUrl: 'assets/avatars/lucas.png',
+    //   rating: 4.9,
+    //   reviewCount: 256,
+    //   specialization: 'Investment Banking',
+    //   isAvailable: false,
+    // ),
+    // Professional(
+    //   name: 'John Kealn',
+    //   role: 'Stock Broker',
+    //   avatarUrl: 'assets/avatars/john.png',
+    //   rating: 4.7,
+    //   reviewCount: 89,
+    //   specialization: 'Equity Trading',
+    //   isAvailable: true,
+    // ),
+    // Professional(
+    //   name: 'Yossy Angela',
+    //   role: 'Financial Advisor',
+    //   avatarUrl: 'assets/avatars/yossy.png',
+    //   rating: 4.9,
+    //   reviewCount: 312,
+    //   specialization: 'Retirement Planning',
+    //   isAvailable: false,
+    // ),
+    // Professional(
+    //   name: 'Julia Agustine',
+    //   role: 'Accountant',
+    //   avatarUrl: 'assets/avatars/julia.png',
+    //   rating: 4.6,
+    //   reviewCount: 156,
+    //   specialization: 'Corporate Finance',
+    //   isAvailable: true,
+    // ),
   ];
 
   String searchQuery = '';
 
   List<Professional> get filteredProfessionals {
+    final meetingsController = Provider.of<MeetingsController>(context, listen: true);
+
+    if (meetingsController.allProfessionals.isEmpty) {
+      return [];
+    }
+
+    List<Professional> professionals = meetingsController.allProfessionals.map((data) {
+      return Professional(
+        id: data['user_ID']?.toString() ?? 'Unknown',
+        name: data['full_name'] ?? 'Unknown',
+        role: data['type'] ?? 'Unknown',
+        avatarUrl: data['profile_image'] ?? '',
+        rating: 4.5,
+        reviewCount: 100,
+        specialization: data['type'] ?? 'Unknown',
+        isAvailable: data['status'] == 'active',
+        chargePerHr: (data['charge_per_Hr'] as num?)?.toDouble() ?? 0.0, // Map hourly charge
+      );
+    }).toList();
+
     return professionals.where((professional) {
-      final matchesFilter = selectedFilter == 'All Professionals' ||
-          professional.role == selectedFilter;
+      final matchesFilter = selectedFilter == 'All Professionals' || 
+                            professional.role == selectedFilter;
       final matchesSearch = professional.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          professional.role.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          professional.specialization.toLowerCase().contains(searchQuery.toLowerCase());
+                            professional.role.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                            professional.specialization.toLowerCase().contains(searchQuery.toLowerCase());
       return matchesFilter && matchesSearch;
     }).toList();
   }
+
 
   void _handleMenuPress(BuildContext context) {
     _scaffoldKey.currentState?.openDrawer();
@@ -93,7 +118,26 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeData();
+    });
+  }
+
+  Future<void> _initializeData() async {
+    final meetingsController = Provider.of<MeetingsController>(context, listen: false);
+    try {
+      await meetingsController.fetchAllProfessionals();
+      await meetingsController.fetchAllProfessionalTypes();
+    } catch (e) {
+      print('Error initializing data: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+     final meetingsController = Provider.of<MeetingsController>(context);
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: AppColors.background.withOpacity(0.98),
@@ -155,6 +199,8 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                         ),
 
                         const SizedBox(height: 16),
+
+                        // Filter Chips
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -164,175 +210,176 @@ class _ProfessionalListScreenState extends State<ProfessionalListScreen> {
                                 isSelected: selectedFilter == 'All Professionals',
                                 onSelected: (value) => setState(() => selectedFilter = 'All Professionals'),
                               ),
-                              _FilterChip(
-                                label: 'Accountant',
-                                isSelected: selectedFilter == 'Accountant',
-                                onSelected: (value) => setState(() => selectedFilter = 'Accountant'),
-                              ),
-                              _FilterChip(
-                                label: 'Financial Advisor',
-                                isSelected: selectedFilter == 'Financial Advisor',
-                                onSelected: (value) => setState(() => selectedFilter = 'Financial Advisor'),
-                              ),
-                              _FilterChip(
-                                label: 'Stock Broker',
-                                isSelected: selectedFilter == 'Stock Broker',
-                                onSelected: (value) => setState(() => selectedFilter = 'Stock Broker'),
-                              ),
+                              ...meetingsController.allProfessionalTypes.map((type) {
+                                return _FilterChip(
+                                  label: type,
+                                  isSelected: selectedFilter == type,
+                                  onSelected: (value) => setState(() => selectedFilter = type),
+                                );
+                              }).toList(),
                             ],
                           ),
                         ),
                       ],
                     ),
                   ),
+
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: filteredProfessionals.length,
-                      itemBuilder: (context, index) {
-                        final professional = filteredProfessionals[index];
-                        return GestureDetector(
-                          onTap: () => _navigateToBooking(context, professional),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 80,
-                                        height: 80,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          color: AppColors.primaryLight,
-                                        ),
-                                        child: const Icon(
-                                          Icons.person,
-                                          size: 40,
-                                          color: AppColors.primary,
-                                        ),
+                    child: meetingsController.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: filteredProfessionals.length,
+                            itemBuilder: (context, index) {
+                              final professional = filteredProfessionals[index];
+                              return GestureDetector(
+                                onTap: () => _navigateToBooking(context, professional),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                    ],
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      children: [
+                                        Row(
                                           children: [
-                                            Text(
-                                              professional.name,
-                                              style: AppTextStyles.bodySmall,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              professional.role,
-                                              style: AppTextStyles.bodyMedium.copyWith(
-                                                color: AppColors.textSecondary,
+                                            Container(
+                                              width: 80,
+                                              height: 80,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(12),
+                                                color: AppColors.primaryLight,
                                               ),
+                                              child: professional.avatarUrl.isNotEmpty
+                                                  ? Image.network(professional.avatarUrl)
+                                                  : const Icon(
+                                                      Icons.person,
+                                                      size: 40,
+                                                      color: AppColors.primary,
+                                                    ),
                                             ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.star,
-                                                  size: 16,
-                                                  color: Colors.amber,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  '${professional.rating}',
-                                                  style: AppTextStyles.bodyMedium,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  '(${professional.reviewCount} reviews)',
-                                                  style: AppTextStyles.bodySmall.copyWith(
-                                                    color: AppColors.textSecondary,
+                                            const SizedBox(width: 16),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    professional.name,
+                                                    style: AppTextStyles.bodySmall,
                                                   ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primaryLight,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            professional.specialization,
-                                            style: AppTextStyles.bodySmall.copyWith(
-                                              color: AppColors.background,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: professional.isAvailable 
-                                              ? AppColors.success.withOpacity(0.1)
-                                              : AppColors.error.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.circle,
-                                              size: 8,
-                                              color: professional.isAvailable 
-                                                  ? AppColors.success
-                                                  : AppColors.error,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              professional.isAvailable ? 'Available' : 'Unavailable',
-                                              style: AppTextStyles.bodySmall.copyWith(
-                                                color: professional.isAvailable 
-                                                    ? AppColors.success
-                                                    : AppColors.error,
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    professional.role,
+                                                    style: AppTextStyles.bodyMedium.copyWith(
+                                                      color: AppColors.textSecondary,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.star,
+                                                        size: 16,
+                                                        color: Colors.amber,
+                                                      ),
+                                                      const SizedBox(width: 4),
+                                                      Text(
+                                                        '${professional.rating}',
+                                                        style: AppTextStyles.bodyMedium,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        '(${professional.reviewCount} reviews)',
+                                                        style: AppTextStyles.bodySmall.copyWith(
+                                                          color: AppColors.textSecondary,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primaryLight,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  professional.specialization,
+                                                  style: AppTextStyles.bodySmall.copyWith(
+                                                    color: AppColors.background,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: professional.isAvailable
+                                                    ? AppColors.success.withOpacity(0.1)
+                                                    : AppColors.error.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.circle,
+                                                    size: 8,
+                                                    color: professional.isAvailable
+                                                        ? AppColors.success
+                                                        : AppColors.error,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Text(
+                                                    professional.isAvailable
+                                                        ? 'Available'
+                                                        : 'Unavailable',
+                                                    style: AppTextStyles.bodySmall.copyWith(
+                                                      color: professional.isAvailable
+                                                          ? AppColors.success
+                                                          : AppColors.error,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
+
+
                 ],
               ),
             ),

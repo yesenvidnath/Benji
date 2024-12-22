@@ -47,4 +47,9 @@ class ApiEndpoints{
   static const String updateAllExpensess = "$baseUrlExpensess/update";
   static const String deleteAllExpensess = "$baseUrlExpensess/delete";
   static const String getAllExpensess = "$baseUrlExpensess/all";
+
+  // Meetings Handling 
+  static const String getAllprofessionals = "$baseUrlCustomer/professionals/all";
+  static const String getAllprofessionalTypes = "$baseUrlCustomer/professional-types";
+  static const String bookMeeting = "$baseUrlCustomer/book-meeting"; 
 }

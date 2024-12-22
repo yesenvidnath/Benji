@@ -10,6 +10,7 @@ import 'controllers/auth_controller.dart';
 import 'controllers/user_controller.dart'; // Import UserController
 import 'controllers/analytics_controller.dart';
 import 'controllers/expenses_controller.dart';
+import 'controllers/meetings_controller.dart';
 
 
 void main() {
@@ -19,6 +20,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => AuthController()),
         ChangeNotifierProvider(create: (_) => UserController()), // Add UserController
         ChangeNotifierProvider(create: (_) => AnalyticsController()),
+        ChangeNotifierProvider(create: (_) => MeetingsController()),
       ],
       child: const MyApp(),
     ),

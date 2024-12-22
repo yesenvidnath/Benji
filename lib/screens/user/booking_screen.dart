@@ -9,7 +9,7 @@ import './payments_screen.dart';
 
 class BookingScreen extends StatefulWidget {
   final Professional professional;
-  
+
   const BookingScreen({
     super.key,
     required this.professional,
@@ -74,41 +74,42 @@ class _BookingScreenState extends State<BookingScreen> {
           color: CupertinoColors.systemBackground.resolveFrom(context),
           child: Column(
             children: [
-              Container(
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: CupertinoColors.separator.resolveFrom(context),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.blue),
                     ),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.of(context).pop(),
+                  CupertinoButton(
+                    child: Text(
+                      'Done',
+                      style: TextStyle(color: Colors.blue),
                     ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      setState(() {
+                        // Optional shared date logic if needed
+                        // Uncomment and adjust as per your requirements
+                        // if (_useSharedDate) {
+                        //   for (var expense in _pendingExpenses) {
+                        //     expense.date = selectedDate;
+                        //   }
+                        // }
+                      });
+                    },
+                  ),
+                ],
               ),
               Expanded(
                 child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.dateAndTime,
-                  initialDateTime: DateTime.now(),
-                  minimumDate: DateTime.now(),
-                  maximumDate: DateTime.now().add(const Duration(days: 365)),
+                  mode: CupertinoDatePickerMode.dateAndTime, // or .date if only date is required
+                  initialDateTime: selectedDate,
                   onDateTimeChanged: (DateTime newDateTime) {
-                    setState(() {
-                      selectedDate = newDateTime;
-                      selectedTime = TimeOfDay.fromDateTime(newDateTime);
-                    });
+                    setState(() => selectedDate = newDateTime);
                   },
                 ),
               ),
@@ -118,6 +119,7 @@ class _BookingScreenState extends State<BookingScreen> {
       },
     );
   }
+
 
   String _formatDateTime() {
     return '${selectedDate.day} ${_getMonth(selectedDate.month)} ${selectedDate.year} '
@@ -155,16 +157,14 @@ class _BookingScreenState extends State<BookingScreen> {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColors.primaryLight,
-              // ignore: unnecessary_null_comparison
-              image: widget.professional.avatarUrl != null
+              image: widget.professional.avatarUrl.isNotEmpty
                   ? DecorationImage(
-                      image: AssetImage(widget.professional.avatarUrl),
+                      image: NetworkImage(widget.professional.avatarUrl),
                       fit: BoxFit.cover,
                     )
                   : null,
             ),
-            // ignore: unnecessary_null_comparison
-            child: widget.professional.avatarUrl == null
+            child: widget.professional.avatarUrl.isEmpty
                 ? Icon(
                     CupertinoIcons.person_fill,
                     size: 60,
@@ -210,6 +210,13 @@ class _BookingScreenState extends State<BookingScreen> {
             ],
           ),
           const SizedBox(height: 8),
+          Text(
+            'Charge: \$${widget.professional.chargePerHr.toStringAsFixed(2)}/hr',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -231,6 +238,7 @@ class _BookingScreenState extends State<BookingScreen> {
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -254,8 +262,6 @@ class _BookingScreenState extends State<BookingScreen> {
                   children: [
                     _buildProfessionalCard(),
                     const SizedBox(height: 16),
-                    
-                    // Date and Time Picker
                     _buildCustomInputField(
                       label: 'Date and Time',
                       child: InkWell(
@@ -279,33 +285,29 @@ class _BookingScreenState extends State<BookingScreen> {
                         ),
                       ),
                     ),
-                    
-                    // Description Field
-                    _buildCustomInputField(
-                      label: 'Description',
-                      child: TextField(
-                        controller: descriptionController,
-                        maxLines: 4,
-                        style: AppTextStyles.bodyLarge,
-                        decoration: InputDecoration(
-                          hintText: 'Enter booking description...',
-                          hintStyle: AppTextStyles.inputHint,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          prefixIcon: Icon(
-                            CupertinoIcons.doc_text,
-                            color: AppColors.primary.withOpacity(0.7),
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // _buildCustomInputField(
+                    //   label: 'Description',
+                    //   child: TextField(
+                    //     controller: descriptionController,
+                    //     maxLines: 4,
+                    //     style: AppTextStyles.bodyLarge,
+                    //     decoration: InputDecoration(
+                    //       hintText: 'Enter booking description...',
+                    //       hintStyle: AppTextStyles.inputHint,
+                    //       border: InputBorder.none,
+                    //       contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    //       prefixIcon: Icon(
+                    //         CupertinoIcons.doc_text,
+                    //         color: AppColors.primary.withOpacity(0.7),
+                    //         size: 22,
+                    //       ),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),
             ),
-            
-            // Booking Button
             Padding(
               padding: const EdgeInsets.all(16),
               child: Container(
@@ -337,7 +339,7 @@ class _BookingScreenState extends State<BookingScreen> {
                           builder: (context) => PaymentScreen(
                             professional: widget.professional,
                             bookingDateTime: _formatDateTime(),
-                            description: descriptionController.text,
+                            
                           ),
                         ),
                       );
