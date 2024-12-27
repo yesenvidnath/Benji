@@ -1,9 +1,16 @@
+import 'dart:io';
+import 'dart:convert';
+import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
+import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../widgets/common/header_navigator.dart';
 import '../../../widgets/common/footer_navigator.dart';
+import '../../controllers/convert_controller.dart';
+import '../../data/models/convert_model.dart';
 
 class CertificationUploadScreen extends StatefulWidget {
   const CertificationUploadScreen({Key? key}) : super(key: key);
@@ -13,21 +20,32 @@ class CertificationUploadScreen extends StatefulWidget {
 }
 
 class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _certificationNameController = TextEditingController();
-  late DateTime _expiryDate;
-  Map<String, bool> _uploadedFiles = {
-    'certificate': false,
-    'nicFront': false,
-    'nicBack': false,
-    'photo': false,
-  };
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _picker = ImagePicker();
+  final _certificationNameController = TextEditingController();
+  final _typeOfProfessionalController = TextEditingController();
+
+  DateTime _certificationDate = DateTime.now();
+  bool _hasUploadedImage = false;
+  bool _isLoading = false;
+  dynamic _currentImageFile;
+  Uint8List? _webImage;
+  
+  final List<CertificationModel> _certifications = [];
+  late ConvertController _convertController;
 
   @override
   void initState() {
     super.initState();
-    _expiryDate = DateTime.now();
+    _convertController = Provider.of<ConvertController>(context, listen: false);
+  }
+
+  @override
+  void dispose() {
+    _certificationNameController.dispose();
+    _typeOfProfessionalController.dispose();
+    super.dispose();
   }
 
   void _handleMenuPress(BuildContext context) {
@@ -67,8 +85,8 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
     );
   }
 
-  Future<void> _showExpiryDatePicker() async {
-    DateTime? tempDate = _expiryDate;
+  Future<void> _showCertificationDatePicker() async {
+    DateTime? tempDate = _certificationDate;
     await showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
@@ -87,7 +105,7 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                   CupertinoButton(
                     child: Text('Done', style: TextStyle(color: AppColors.primary)),
                     onPressed: () {
-                      setState(() => _expiryDate = tempDate!);
+                      setState(() => _certificationDate = tempDate!);
                       Navigator.of(context).pop();
                     },
                   ),
@@ -96,8 +114,8 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
               Expanded(
                 child: CupertinoDatePicker(
                   mode: CupertinoDatePickerMode.date,
-                  initialDateTime: _expiryDate,
-                  minimumDate: DateTime.now().subtract(const Duration(days: 1)),
+                  initialDateTime: _certificationDate,
+                  maximumDate: DateTime.now(),
                   onDateTimeChanged: (DateTime newDate) {
                     tempDate = newDate;
                   },
@@ -110,7 +128,41 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
     );
   }
 
-  Future<void> _showImageSourceDialog(String type) async {
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 1800,
+        maxHeight: 1800,
+        imageQuality: 85,
+      );
+      
+      if (pickedFile != null) {
+        if (kIsWeb) {
+          final bytes = await pickedFile.readAsBytes();
+          setState(() {
+            _webImage = bytes;
+            _currentImageFile = bytes;
+            _hasUploadedImage = true;
+          });
+        } else {
+          setState(() {
+            _currentImageFile = File(pickedFile.path);
+            _hasUploadedImage = true;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _hasUploadedImage = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking image: $e')),
+      );
+    }
+  }
+
+  Future<void> _showImageSourceDialog() async {
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -133,18 +185,16 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                       icon: Icons.camera_alt,
                       label: 'Camera',
                       onTap: () {
-                        // Implement camera capture
-                        setState(() => _uploadedFiles[type] = true);
                         Navigator.pop(context);
+                        _pickImage(ImageSource.camera);
                       },
                     ),
                     _buildImageSourceOption(
                       icon: Icons.photo_library,
                       label: 'Gallery',
                       onTap: () {
-                        // Implement gallery picker
-                        setState(() => _uploadedFiles[type] = true);
                         Navigator.pop(context);
+                        _pickImage(ImageSource.gallery);
                       },
                     ),
                   ],
@@ -182,11 +232,35 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
     );
   }
 
-  Widget _buildUploadButton({
-    required String label,
-    required String type,
-    bool allowMultiple = false,
-  }) {
+  Widget _buildImagePreview() {
+    if (!_hasUploadedImage) return const SizedBox();
+
+    if (kIsWeb) {
+      return Image.memory(
+        _currentImageFile,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[200],
+            child: const Center(child: Text('Error loading image')),
+          );
+        },
+      );
+    } else {
+      return Image.file(
+        _currentImageFile,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey[200],
+            child: const Center(child: Text('Error loading image')),
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildUploadButton() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -200,28 +274,154 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
           ),
         ],
       ),
-      child: ListTile(
-        onTap: () => _showImageSourceDialog(type),
-        leading: Icon(
-          _uploadedFiles[type] == true ? Icons.check_circle : Icons.upload_file,
-          color: _uploadedFiles[type] == true ? AppColors.success : AppColors.primary,
-        ),
-        title: Text(
-          label,
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: _uploadedFiles[type] == true ? AppColors.success : AppColors.primary,
+      child: Column(
+        children: [
+          ListTile(
+            onTap: _showImageSourceDialog,
+            leading: Icon(
+              _hasUploadedImage ? Icons.check_circle : Icons.upload_file,
+              color: _hasUploadedImage ? AppColors.success : AppColors.primary,
+            ),
+            title: Text(
+              'Upload Certificate Image',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: _hasUploadedImage ? AppColors.success : AppColors.primary,
+              ),
+            ),
+            trailing: Icon(CupertinoIcons.chevron_right, 
+              color: AppColors.primary.withOpacity(0.5)),
           ),
-        ),
-        subtitle: allowMultiple
-            ? Text(
-                'You can upload multiple images',
-                style: AppTextStyles.bodySmall.copyWith(color: Colors.grey),
-              )
-            : null,
-        trailing: Icon(CupertinoIcons.chevron_right, color: AppColors.primary.withOpacity(0.5)),
+          if (_hasUploadedImage) 
+            Container(
+              height: 200,
+              width: double.infinity,
+              margin: const EdgeInsets.all(16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: _buildImagePreview(),
+              ),
+            ),
+        ],
       ),
     );
   }
+
+  Widget _buildCertificationCard(CertificationModel cert, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            title: Text(
+              cert.name,
+              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Text('Type: ${cert.type}'),
+                Text('Date: ${cert.date.day}/${cert.date.month}/${cert.date.year}'),
+              ],
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.delete, color: Colors.red[400]),
+              onPressed: () {
+                setState(() {
+                  _certifications.removeAt(index);
+                });
+              },
+            ),
+          ),
+          Container(
+            height: 200,
+            width: double.infinity,
+            margin: const EdgeInsets.all(16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: kIsWeb
+                  ? Image.memory(cert.imageFile, fit: BoxFit.cover)
+                  : Image.file(cert.imageFile, fit: BoxFit.cover),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addCertification() {
+    if (_formKey.currentState?.validate() ?? false) {
+      if (!_hasUploadedImage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please upload a certificate image')),
+        );
+        return;
+      }
+
+      setState(() {
+        _certifications.add(CertificationModel(
+          name: _certificationNameController.text,
+          type: _typeOfProfessionalController.text,
+          date: _certificationDate,
+          imageFile: _currentImageFile,
+        ));
+        
+        _certificationNameController.clear();
+        _hasUploadedImage = false;
+        _currentImageFile = null;
+      });
+    }
+  }
+
+  Future<void> _uploadCertifications() async {
+    try {
+      setState(() => _isLoading = true);
+
+      final List<Map<String, dynamic>> certificatesData = _certifications.map((cert) {
+        dynamic imageData;
+        if (kIsWeb) {
+          imageData = cert.imageFile; // Uint8List for web
+        } else {
+          final File imageFile = cert.imageFile as File;
+          imageData = imageFile.readAsBytesSync(); // Binary data for mobile
+        }
+
+        return {
+          'certificateImage': imageData,
+          'certificateName': cert.name,
+          'certificateDate': cert.date.toIso8601String(),
+        };
+      }).toList();
+
+      final model = ConvertProfessionalModel(
+        professionalType: _typeOfProfessionalController.text,
+        certificates: certificatesData,
+      );
+
+      await _convertController.convertToProfessional(model);
+      
+      setState(() => _isLoading = false);
+      _showSuccessDialog();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading certifications: $e')),
+      );
+    }
+  }
+
 
   void _showSuccessDialog() {
     showDialog(
@@ -234,21 +434,15 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.check_circle,
-                  color: AppColors.success,
-                  size: 64,
-                ),
+                Icon(Icons.check_circle, color: AppColors.success, size: 64),
                 const SizedBox(height: 16),
                 Text(
                   'Congratulations!',
-                  style: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'The admin will confirm your professional account.',
+                  'Your certifications have been submitted successfully.',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.bodyMedium,
                 ),
@@ -257,7 +451,10 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop();
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
@@ -289,7 +486,7 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
       drawer: HeaderNavigator.buildDrawer(context),
       body: SafeArea(
         child: Column(
-          children: [
+children: [
             HeaderNavigator(
               currentRoute: 'certification',
               userName: 'Upload Certification',
@@ -305,6 +502,24 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      _buildInputField(
+                        icon: CupertinoIcons.doc_text,
+                        child: TextFormField(
+                          controller: _typeOfProfessionalController,
+                          style: AppTextStyles.input,
+                          decoration: InputDecoration(
+                            labelText: 'Professional Type',
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.all(16),
+                            labelStyle: AppTextStyles.bodyMedium.copyWith(
+                              color: Colors.black54,
+                            ),
+                          ),
+                          validator: (value) =>
+                              value?.isEmpty ?? true ? 'Required' : null,
+                        ),
+                      ),
+
                       _buildInputField(
                         icon: CupertinoIcons.doc_text,
                         child: TextFormField(
@@ -324,7 +539,7 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                       ),
 
                       InkWell(
-                        onTap: _showExpiryDatePicker,
+                        onTap: _showCertificationDatePicker,
                         child: Container(
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(16),
@@ -345,7 +560,7 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                                   color: AppColors.primary.withOpacity(0.7)),
                               const SizedBox(width: 12),
                               Text(
-                                'Certification issued date ${_expiryDate.day}/${_expiryDate.month}/${_expiryDate.year}',
+                                'Certification Date: ${_certificationDate.day}/${_certificationDate.month}/${_certificationDate.year}',
                                 style: AppTextStyles.bodyMedium.copyWith(
                                   color: Colors.black54,
                                 ),
@@ -358,36 +573,14 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 16),
-                      
-                      _buildUploadButton(
-                        label: 'Upload Certificate Images',
-                        type: 'certificate',
-                        allowMultiple: true,
-                      ),
-                      _buildUploadButton(
-                        label: 'Upload NIC Front',
-                        type: 'nicFront',
-                      ),
-                      _buildUploadButton(
-                        label: 'Upload NIC Back',
-                        type: 'nicBack',
-                      ),
-                      _buildUploadButton(
-                        label: 'Upload Photo',
-                        type: 'photo',
-                      ),
+                      _buildUploadButton(),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
                       SizedBox(
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState?.validate() ?? false) {
-                              _showSuccessDialog();
-                            }
-                          },
+                          onPressed: _addCertification,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             shape: RoundedRectangleBorder(
@@ -396,7 +589,7 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                             elevation: 2,
                           ),
                           child: Text(
-                            'Submit Certification',
+                            'Add Certification',
                             style: AppTextStyles.bodyLarge.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -404,6 +597,62 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
                           ),
                         ),
                       ),
+
+                      if (_certifications.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        Text(
+                          'Added Certifications',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _certifications.length,
+                          itemBuilder: (context, index) {
+                            return _buildCertificationCard(_certifications[index], index);
+                          },
+                        ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        SizedBox(
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: _isLoading 
+                              ? null 
+                              : () {
+                                  if (_certifications.isNotEmpty) {
+                                    _uploadCertifications();
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Please add at least one certification'),
+                                      ),
+                                    );
+                                  }
+                                },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.success,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: _isLoading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : Text(
+                                  'Submit All Certifications',
+                                  style: AppTextStyles.bodyLarge.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -415,4 +664,18 @@ class _CertificationUploadScreenState extends State<CertificationUploadScreen> {
       bottomNavigationBar: const FooterNavigator(currentRoute: 'certification'),
     );
   }
+}
+
+class CertificationModel {
+  final String name;
+  final String type;
+  final DateTime date;
+  final dynamic imageFile;
+
+  CertificationModel({
+    required this.name,
+    required this.type,
+    required this.date,
+    required this.imageFile,
+  });
 }

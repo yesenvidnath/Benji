@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'screens/common/login_screen.dart';
 import 'screens/common/splash_screen.dart';
 import 'screens/common/profile_screen.dart';
+import 'screens/professional/certificate_management.dart';
 // import 'screens/common/analytics_screen.dart';
 
 // Import controllers
@@ -11,6 +12,7 @@ import 'controllers/user_controller.dart'; // Import UserController
 import 'controllers/analytics_controller.dart';
 import 'controllers/expenses_controller.dart';
 import 'controllers/meetings_controller.dart';
+import '../../controllers/convert_controller.dart';
 
 
 void main() {
@@ -21,6 +23,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => UserController()), // Add UserController
         ChangeNotifierProvider(create: (_) => AnalyticsController()),
         ChangeNotifierProvider(create: (_) => MeetingsController()),
+        ChangeNotifierProvider(create: (_) => ConvertController()),
       ],
       child: const MyApp(),
     ),
