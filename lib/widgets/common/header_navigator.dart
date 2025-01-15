@@ -266,70 +266,77 @@ static Widget buildDrawer(BuildContext context) {
             
             // Rest of the drawer content remains the same
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  _buildDrawerSection(
-                    items: [
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.chart_bar,
-                        title: 'Dashboard',
-                        onTap: () => _handleNavigation(context, 'dashboard'),
+              child: Consumer<UserController>(
+                builder: (context, userController, child) {
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      _buildDrawerSection(
+                        items: [
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.chart_bar,
+                            title: 'Dashboard',
+                            onTap: () => _handleNavigation(context, 'dashboard'),
+                          ),
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.money_dollar_circle,
+                            title: 'Expenses',
+                            onTap: () => _handleNavigation(context, 'expenses'),
+                          ),
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.bell,
+                            title: 'Notifications',
+                            onTap: () => _handleNavigation(context, 'notifications'),
+                          ),
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.calendar,
+                            title: 'Meetings',
+                            onTap: () => _handleNavigation(context, 'meetings'),
+                          ),
+                        ],
                       ),
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.money_dollar_circle,
-                        title: 'Expenses',
-                        onTap: () => _handleNavigation(context, 'expenses'),
+                      
+                      _buildDrawerSection(
+                        items: [
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.graph_circle,
+                            title: 'Statistics',
+                            onTap: () => _handleNavigation(context, 'statistics'),
+                          ),
+                          // Conditionally include the "Professionals" section
+                          if (userController.userType != "Professional")
+                            _buildDrawerItem(
+                              icon: CupertinoIcons.person_2,
+                              title: 'Professionals',
+                              onTap: () => _handleNavigation(context, 'Profeshanals'),
+                            ),
+                            
+                        ],
                       ),
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.bell,
-                        title: 'Notifications',
-                        onTap: () => _handleNavigation(context, 'notifications'),
-                      ),
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.calendar,
-                        title: 'Meetings',
-                        onTap: () => _handleNavigation(context, 'meetings'),
+                      
+                      _buildDrawerSection(
+                        items: [
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.settings,
+                            title: 'Settings',
+                            onTap: () => _handleNavigation(context, 'settings'),
+                          ),
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.question_circle,
+                            title: 'Help & Support',
+                            onTap: () => _handleNavigation(context, 'help'),
+                          ),
+                          _buildDrawerItem(
+                            icon: CupertinoIcons.square_arrow_left,
+                            title: 'Logout',
+                            onTap: () => _handleNavigation(context, 'logout'),
+                            isDestructive: true,
+                          ),
+                        ],
                       ),
                     ],
-                  ),
-                  
-                  _buildDrawerSection(
-                    items: [
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.graph_circle,
-                        title: 'Statistics',
-                        onTap: () => _handleNavigation(context, 'statistics'),
-                      ),
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.person_2,
-                        title: 'Professionals',
-                        onTap: () => _handleNavigation(context, 'Profeshanals'),
-                      ),
-                    ],
-                  ),
-                  
-                  _buildDrawerSection(
-                    items: [
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.settings,
-                        title: 'Settings',
-                        onTap: () => _handleNavigation(context, 'settings'),
-                      ),
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.question_circle,
-                        title: 'Help & Support',
-                        onTap: () => _handleNavigation(context, 'help'),
-                      ),
-                      _buildDrawerItem(
-                        icon: CupertinoIcons.square_arrow_left,
-                        title: 'Logout',
-                        onTap: () => _handleNavigation(context, 'logout'),
-                        isDestructive: true,
-                      ),
-                    ],
-                  ),
-                ],
+                  );
+                },
               ),
             ),
           ],

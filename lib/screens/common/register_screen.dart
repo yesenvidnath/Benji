@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/theme/colors.dart';
 import '../../../core/theme/text_styles.dart';
+import 'profile_screen.dart';
 
 //importing the auth controller 
 import '../../controllers/auth_controller.dart';
@@ -727,7 +728,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 "email": _emailController.text,
                 "password": _passwordController.text,
                 "password_confirmation": _passwordController.text,
-                "profile_image": "https://example.com/image.jpg", // Assuming fixed image URL for now
+                "profile_image": "https://i.pravatar.cc/300", // Assuming fixed image URL for now
                 "bank_choice": _bankController.text,
                 "incomeSources": incomeSourcesList,
               };
@@ -792,7 +793,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: _buildPrimaryButton(
                 text: 'Get Started',
                 onPressed: () {
-                  // Navigate to main app screen
+                  // Navigate to ProfileScreen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProfileScreen(), // Replace with the correct class name
+                    ),
+                  );
                 },
               ),
             ),
