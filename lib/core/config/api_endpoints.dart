@@ -58,4 +58,8 @@ class ApiEndpoints{
 
   // Become Profehsnal 
   static const String convertProfeshnal = "$baseUrl/professional/convert-to-professional";
+
+  // Get and Read Notifications 
+  static const String getNotifications = "$baseUrl/notify/notifications";
+  static const String markNotificationsReaded = "$baseUrl/notify/mark-read";
 }

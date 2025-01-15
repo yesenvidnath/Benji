@@ -7,7 +7,8 @@ import '../../../widgets/common/footer_navigator.dart';
 import '../../../widgets/common/header_navigator.dart';
 import '../../../screens/user/change_profile_screen.dart';
 import '../../../screens/professional/certificate_management.dart';
-
+import '../../../controllers/user_controller.dart';
+import 'package:provider/provider.dart';
 
 class CustomBottomSheet extends StatelessWidget {
   final String title;
@@ -786,14 +787,25 @@ Widget _buildSecurityOption({
                           onTap: () => _navigateToScreen(context, 'about'),
                         ),
                         _buildDivider(),
-                        _buildSettingsItem(
-                          context,
-                          'Become a Professional',
-                          Icons.workspace_premium,
-                          AppColors.success,
-                          onTap: () => _navigateToScreen(context, 'become_professional'),
+                        Consumer<UserController>(
+                          builder: (context, userController, child) {
+                            if (userController.userType == "Professional") {
+                              return const SizedBox.shrink();
+                            }
+                            return Column(
+                              children: [
+                                _buildSettingsItem(
+                                  context,
+                                  'Become a Professional',
+                                  Icons.workspace_premium,
+                                  AppColors.success,
+                                  onTap: () => _navigateToScreen(context, 'become_professional'),
+                                ),
+                                _buildDivider(),
+                              ],
+                            );
+                          },
                         ),
-                        _buildDivider(),
                         _buildSettingsItem(
                           context,
                           'App History',

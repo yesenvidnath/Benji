@@ -253,57 +253,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileDetails(UserController userController) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        Text(
-          userController.fullName,
-          style: AppTextStyles.profileTitle.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 25,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              userController.fullName,
+              style: AppTextStyles.profileTitle.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 25,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    AppColors.primary.withOpacity(0.12),
+                    AppColors.primaryLight.withOpacity(0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.15),
+                  width: 0.5,
+                ),
+              ),
+              child: Text(
+                userController.userType,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () {},
+              child: Text(
+                'Log out',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.error.withOpacity(0.8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [
-                AppColors.primary.withOpacity(0.12),
-                AppColors.primaryLight.withOpacity(0.08),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: AppColors.primary.withOpacity(0.15),
-              width: 0.5,
+        if (userController.userType == "Professional")
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withOpacity(0.15),
+                    AppColors.primary.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    CupertinoIcons.star_fill,
+                    color: AppColors.primary,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Pro',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          child: Text(
-            userController.userType,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.primary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () {},
-          child: Text(
-            'Log out',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.error.withOpacity(0.8),
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ),
       ],
     );
   }
