@@ -8,6 +8,7 @@ import '../../../widgets/common/footer_navigator.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart'; 
+import '../../../controllers/user_controller.dart';
 
 class Meeting {
   final String mentorName;
@@ -30,7 +31,8 @@ class UserMeetingsScreen extends StatefulWidget {
   State<UserMeetingsScreen> createState() => _UserMeetingsScreenState();
 }
 
-class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTickerProviderStateMixin {
+class _UserMeetingsScreenState extends State<UserMeetingsScreen> with TickerProviderStateMixin {  // Changed from SingleTickerProviderStateMixin
+
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   
@@ -47,13 +49,13 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
   @override
   void initState() {
     super.initState();
-    // Initialize the TabController with 2 tabs (My Meetups and History)
     _tabController = TabController(length: 2, vsync: this);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeData();
     });
   }
+
   Future<void> _initializeData() async {
     final meetingsController = Provider.of<MeetingsController>(context, listen: false);
     await meetingsController.fetchPendingMeetings();
@@ -141,97 +143,107 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: AppColors.background.withOpacity(0.98),
-      drawer: HeaderNavigator.buildDrawer(context),
-      body: SafeArea(
-        child: Column(
-          children: [
-            HeaderNavigator(
-              currentRoute: 'meetings',
-              userName: 'Meetups',
-              onMenuPressed: () => _handleMenuPress(context),
-              onSearchPressed: () {},
-              onProfilePressed: () {},
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.08),
-                      blurRadius: 24,
-                      offset: const Offset(0, 12),
+    return Consumer<UserController>(
+      builder: (context, userController, child) {
+        // Determine tabs dynamically based on user type
+        final List<Tab> tabs = [
+          const Tab(text: 'My Meetups'),
+          if (userController.userType != "Professional") const Tab(text: 'Pending Payment'),
+        ];
+
+        // Dispose of the existing TabController before creating a new one to avoid errors
+        _tabController.dispose();
+        _tabController = TabController(length: tabs.length, vsync: this);
+
+        return Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: AppColors.background.withOpacity(0.98),
+          drawer: HeaderNavigator.buildDrawer(context),
+          body: SafeArea(
+            child: Column(
+              children: [
+                HeaderNavigator(
+                  currentRoute: 'meetings',
+                  userName: 'Meetups',
+                  onMenuPressed: () => _handleMenuPress(context),
+                  onSearchPressed: () {},
+                  onProfilePressed: () {},
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.08),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
                     ),
-                  ],
+                    child: TabBar(
+                      controller: _tabController,
+                      labelStyle: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                      unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
+                        fontSize: 15,
+                      ),
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      indicator: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.primary.withOpacity(0.1),
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      overlayColor: MaterialStateProperty.all(Colors.transparent),
+                      tabs: tabs,
+                    ),
+                  ),
                 ),
-                child: TabBar(
-                  controller: _tabController,
-                  labelStyle: AppTextStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                Expanded(
+                  child: Consumer<MeetingsController>(
+                    builder: (context, meetingsController, child) {
+                      if (meetingsController.isLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (meetingsController.errorMessage != null) {
+                        return Center(
+                          child: Text(meetingsController.errorMessage!),
+                        );
+                      }
+
+                      return TabBarView(
+                        controller: _tabController,
+                        children: [
+                          // My Meetups
+                          _buildMeetupsList(
+                            isHistory: false,
+                            meetings: meetingsController.pendingMeetings,
+                          ),
+                          // Pending Payment Tab (conditionally rendered)
+                          if (userController.userType != "Professional")
+                            _buildMeetupsList(
+                              isHistory: true,
+                              meetings: meetingsController.incompletePaidMeetings
+                                  .where((meeting) => meeting['meeting_url'] == null)
+                                  .toList(),
+                            ),
+                        ],
+                      );
+                    },
                   ),
-                  unselectedLabelStyle: AppTextStyles.bodyMedium.copyWith(
-                    fontSize: 15,
-                  ),
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: AppColors.primary.withOpacity(0.1),
-                  ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  overlayColor: MaterialStateProperty.all(Colors.transparent),
-                  tabs: const [
-                    Tab(text: 'My Meetups'),
-                    Tab(text: 'Pending Payment'),
-                  ],
                 ),
-              ),
+                const FooterNavigator(currentRoute: 'meetings'),
+              ],
             ),
-            Expanded(
-              child: Consumer<MeetingsController>(
-                builder: (context, meetingsController, child) {
-                  if (meetingsController.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (meetingsController.errorMessage != null) {
-                    return Center(
-                      child: Text(meetingsController.errorMessage!),
-                    );
-                  }
-
-                  final meetings = meetingsController.pendingMeetings;
-
-                  return TabBarView(
-                    controller: _tabController,
-                    children: [
-                      // My Meetups
-                        _buildMeetupsList(
-                          isHistory: false,
-                          meetings: meetingsController.pendingMeetings,
-                        ),
-                        // Pending Payment Tab (incompletePaidMeetings only)
-                        _buildMeetupsList(
-                          isHistory: true,
-                          meetings: meetingsController.incompletePaidMeetings
-                              .where((meeting) => meeting['meeting_url'] == null)
-                              .toList(),
-                        ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            const FooterNavigator(currentRoute: 'meetings'),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -283,64 +295,107 @@ class _UserMeetingsScreenState extends State<UserMeetingsScreen> with SingleTick
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            AppColors.primary.withOpacity(0.15),
-                            AppColors.primary.withOpacity(0.05),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.1),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
+                Consumer<UserController>(
+                  builder: (context, userController, child) {
+                    return Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.primary.withOpacity(0.15),
+                                AppColors.primary.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.1),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Text(
-                        meeting['professional_name'].substring(0, 2).toUpperCase(),
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            meeting['professional_name'],
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              fontWeight: FontWeight.w600,
+                          child: Text(
+                            meeting['professional_name'].substring(0, 2).toUpperCase(),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Start: ${DateFormat('MMM dd, yyyy hh:mm a').format(startTime)}\n'
-                            'End: ${DateFormat('MMM dd, yyyy hh:mm a').format(endTime)}',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.primary.withOpacity(0.15),
+                                AppColors.primary.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.1),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            meeting['customer_name'].substring(0, 2).toUpperCase(),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                meeting['professional_name'],
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                meeting['customer_name'],
+                                style: AppTextStyles.bodyLarge.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Start: ${DateFormat('MMM dd, yyyy hh:mm a').format(startTime)}\n'
+                                'End: ${DateFormat('MMM dd, yyyy hh:mm a').format(endTime)}',
+                                style: AppTextStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),    
                 if (meetingUrl != null && !isHistory) ...[
                   const SizedBox(height: 16),
                   Row(
